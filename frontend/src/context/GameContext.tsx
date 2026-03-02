@@ -8,6 +8,7 @@ interface GameState {
   balance: number;
   currentPrice: number;
   currentCandle: CandleData | null;
+  candles: CandleData[];
   trades: Trade[];
   theme: 'dark' | 'light';
   selectedSymbol: string;
@@ -35,6 +36,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode; }> = ({ childre
   const [balance, setBalance] = useState(100000);
   const [currentPrice, setCurrentPrice] = useState(21500);
   const [currentCandle, setCurrentCandle] = useState<CandleData | null>(null);
+  const [candles, setCandles] = useState<CandleData[]>([]); // <--- NEW STATE
   const [trades, setTrades] = useState<Trade[]>([]);
   const [theme, setTheme] = useState<'dark' | 'light'>('dark');
   const [selectedSymbol, setSelectedSymbol] = useState('');
@@ -62,6 +64,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode; }> = ({ childre
         };
 
         setCurrentCandle(newCandle);
+        setCandles(prev => [...prev, newCandle]); // Add to history
         setCurrentPrice(d.close);
       }
 
@@ -99,7 +102,61 @@ export const GameProvider: React.FC<{ children: React.ReactNode; }> = ({ childre
       }
 
       if (payload.type === 'TICK') {
-        setCurrentPrice(payload.data.price);
+        const price = payload.data.price;
+        setCurrentPrice(price);
+
+        // Update Current Candle Live
+        setCurrentCandle(prev => {
+          if (!prev) {
+            // Initialize first candle from tick
+            const rawTime = new Date(payload.data.timestamp).getTime() / 1000;
+            const timestamp = rawTime + 19800;
+            const newCandle = {
+              time: timestamp,
+              open: price,
+              high: price,
+              low: price,
+              close: price
+            };
+
+            // Add to history if not exists (or replace last if same time... logic needed)
+            // Ideally, we add to 'candles' only when a *new* candle starts.
+            // But here we are just setting the 'current'.
+            return newCandle;
+          }
+
+          // Check if tick belongs to new time (minute change)
+          const rawTime = new Date(payload.data.timestamp).getTime() / 1000;
+          const timestamp = rawTime + 19800;
+
+          if (timestamp > prev.time) {
+            // NEW CANDLE STARTED
+            // Commit the *previous* candle to history
+            setCandles(prevHist => {
+              // Avoid duplicates: check if last candle time is same
+              if (prevHist.length > 0 && prevHist[prevHist.length - 1].time === prev.time) {
+                return [...prevHist.slice(0, -1), prev]; // Update last
+              }
+              return [...prevHist, prev];
+            });
+
+            return {
+              time: timestamp,
+              open: price,
+              high: price,
+              low: price,
+              close: price
+            };
+          }
+
+          // Update existing candle
+          return {
+            ...prev,
+            high: Math.max(prev.high, price),
+            low: Math.min(prev.low, price),
+            close: price
+          };
+        });
       }
     });
 
@@ -148,7 +205,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode; }> = ({ childre
 
   return (
     <GameContext.Provider value={{
-      isPlaying, speed, balance, currentPrice, currentCandle, trades,
+      isPlaying, speed, balance, currentPrice, currentCandle, candles, trades,
       theme, selectedSymbol,
       togglePlay, toggleTheme, setSpeed, setSymbol, placeOrder, closePosition, resetSimulation
     }}>

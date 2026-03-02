@@ -5,6 +5,7 @@ import { useGame } from '../../hooks/useGame';
 import { useThemeStore } from '../../store/themeStore';
 
 const ChartArea = () => {
+<<<<<<< Updated upstream
   const { currentPrice, currentCandle, isPlaying } = useGame();
   const { theme } = useThemeStore();
 
@@ -51,6 +52,19 @@ const ChartArea = () => {
 
     seriesRef.current = series;
 
+    // Initial Data Load (if any)
+    if (candles.length > 0) {
+      const formattedData = candles.map(c => ({
+        time: c.time as UTCTimestamp,
+        open: c.open,
+        high: c.high,
+        low: c.low,
+        close: c.close
+      }));
+      series.setData(formattedData);
+      chart.timeScale().fitContent();
+    }
+
     const handleResize = () => {
       if (chartContainerRef.current && chartRef.current) {
         chartRef.current.applyOptions({
@@ -65,6 +79,7 @@ const ChartArea = () => {
       window.removeEventListener('resize', handleResize);
       chart.remove();
     };
+<<<<<<< Updated upstream
   }, []);
 
   // Update Theme
@@ -81,6 +96,9 @@ const ChartArea = () => {
       rightPriceScale: { borderColor: isDark ? '#2A2E39' : '#E0E3EB' },
     });
   }, [theme]);
+=======
+  }, []); // Only run once on mount
+>>>>>>> Stashed changes
 
   // UPDATE CHART WITH REAL CANDLES
   useEffect(() => {
@@ -94,7 +112,6 @@ const ChartArea = () => {
       }
 
       // 2. Plot the Candle
-      // We explicitly cast to the Lightweight Charts Candle format
       const candle = {
         time: currentCandle.time as UTCTimestamp,
         open: currentCandle.open,
@@ -104,6 +121,12 @@ const ChartArea = () => {
       };
 
       seriesRef.current.update(candle);
+
+      // Auto-fit if we just started (first few candles)
+      if (currentCandle.time > lastTimeRef.current && lastTimeRef.current === 0) {
+        chartRef.current?.timeScale().fitContent();
+      }
+
       lastTimeRef.current = currentCandle.time;
 
     } catch (err) {
