@@ -4,6 +4,9 @@ FROM python:3.10-slim
 # Set the working directory in the container
 WORKDIR /app
 
+# Ensure data directory exists
+RUN mkdir -p /app/data
+
 # Copy the requirements file into the container
 COPY requirements.txt .
 

@@ -4,6 +4,21 @@ import type { CandleData, Trade } from '../types';
 import { marketDataService, fetchHistoricalCandles, fetchAvailableDates } from '../services/MarketDataService';
 import { toast } from 'sonner';
 
+export interface NewsItem {
+  id: number;
+  symbol: string;
+  title: string;
+  description: string;
+  time_str: string;
+  source: string;
+  url: string;
+  analysis?: string;
+  sentiment?: string;
+  predicted_impact?: string;
+  actual_impact?: string;
+  qa_history?: {question: string, answer: string}[];
+}
+
 interface GameState {
   isPlaying: boolean;
   speed: number;
@@ -13,6 +28,7 @@ interface GameState {
   currentTime: Date | null;
   historicalCandles: CandleData[];
   trades: Trade[];
+  newsItems: NewsItem[];
   theme: 'dark' | 'light';
   selectedSymbol: string;
   selectedDate: string;
@@ -29,6 +45,7 @@ interface GameState {
   closePosition: (tradeId: string) => void;
   resetSimulation: () => void;
   clearHistoryForReplay: () => void;
+  askNewsQuestion: (newsId: number, question: string) => void;
 }
 
 export const GameContext = createContext<GameState | null>(null);
@@ -50,6 +67,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode; }> = ({ childre
   const [currentTime, setCurrentTime] = useState<Date | null>(null);
   const [historicalCandles, setHistoricalCandles] = useState<CandleData[]>([]);
   const [trades, setTrades] = useState<Trade[]>([]);
+  const [newsItems, setNewsItems] = useState<NewsItem[]>([]);
   const [theme, setTheme] = useState<'dark' | 'light'>('dark');
   const [selectedSymbol, setSelectedSymbol] = useState(DEFAULT_SYMBOL);
   const [isLoadingHistory, setIsLoadingHistory] = useState(false);
@@ -138,6 +156,43 @@ export const GameProvider: React.FC<{ children: React.ReactNode; }> = ({ childre
         return;
       }
 
+      // --- NEWS EVENTS ---
+      if (payload.type === 'NEWS_FLASH') {
+        toast.info(payload.data.title, { description: "FinGPT is analyzing..." });
+        const newsEvent: NewsItem = { ...payload.data, analysis: "Analyzing impact...", sentiment: "NEUTRAL" };
+        setNewsItems(prev => [newsEvent, ...prev]);
+      }
+      
+      if (payload.type === 'NEWS_ANALYSIS') {
+        const { id, analysis, sentiment, predicted_impact } = payload.data;
+        setNewsItems(prev => prev.map(item => 
+          item.id === id ? { ...item, analysis, sentiment, predicted_impact, qa_history: [] } : item
+        ));
+        toast.success(`FinGPT Analysis: ${sentiment}`, { description: "News context updated." });
+      }
+
+      if (payload.type === 'NEWS_IMPACT_RESULT') {
+        const { id, actual_impact } = payload.data;
+        setNewsItems(prev => prev.map(item =>
+          item.id === id ? { ...item, actual_impact } : item
+        ));
+        toast.info(`News Impact Recorded: ${actual_impact}`);
+      }
+
+      if (payload.type === 'NEWS_ANSWER') {
+        const { id, question, answer } = payload.data;
+        setNewsItems(prev => prev.map(item => {
+          if (item.id === id) {
+            return {
+              ...item,
+              qa_history: [...(item.qa_history || []), { question, answer }]
+            };
+          }
+          return item;
+        }));
+      }
+      // -------------------
+
       // CANDLE event: backend sends the full OHLCV for each completed minute
       if (payload.type === 'CANDLE') {
         const d = payload.data;
@@ -223,6 +278,14 @@ export const GameProvider: React.FC<{ children: React.ReactNode; }> = ({ childre
     setCurrentCandle(null);
   };
 
+  const askNewsQuestion = (newsId: number, question: string) => {
+    marketDataService.sendMessage({
+      command: 'NEWS_QUESTION',
+      news_id: newsId,
+      question
+    });
+  };
+
   const placeOrder = (type: 'BUY' | 'SELL', quantity: number) => {
     const newTrade: Trade = {
       id: Math.random().toString(36).substr(2, 9),
@@ -255,6 +318,8 @@ export const GameProvider: React.FC<{ children: React.ReactNode; }> = ({ childre
     setIsPlaying(false);
     setBalance(100000);
     setTrades([]);
+    setHistoricalCandles([]);
+    setNewsItems([]);
     setCurrentCandle(null);
   };
 
@@ -262,9 +327,9 @@ export const GameProvider: React.FC<{ children: React.ReactNode; }> = ({ childre
     <GameContext.Provider
       value={{
         isPlaying, speed, balance, currentPrice, currentCandle, currentTime,
-        historicalCandles, trades, theme, selectedSymbol, selectedDate, availableDates, isLoadingHistory, isReplayActive,
+        historicalCandles, trades, newsItems, theme, selectedSymbol, selectedDate, availableDates, isLoadingHistory, isReplayActive,
         togglePlay, toggleTheme, setSpeed, setSymbol, setDate,
-        placeOrder, closePosition, resetSimulation, toggleReplay, clearHistoryForReplay
+        placeOrder, closePosition, resetSimulation, toggleReplay, clearHistoryForReplay, askNewsQuestion
       }}
     >
       {children}

@@ -1,28 +1,60 @@
+# === Core Framework ===
 fastapi
 uvicorn[standard]
-asyncpg
-redis
-minio
-pandas
+pydantic
+
+# === Database ===
 sqlalchemy
 psycopg2-binary
+asyncpg
+
+# === Data Processing ===
+pandas
 pyarrow
+numpy
+
+# === Object Storage ===
+minio
+
+# === Message Queue ===
 pika
-beautifulsoup4
+
+# === Caching ===
+redis
+
+# === HTTP / Networking ===
+aiohttp
 requests
 websockets
+
+# === Web Scraping & NLP ===
+beautifulsoup4
 vaderSentiment
-prometheus-fastapi-instrumentator
-fastapi-mail==1.4.1
+
+# === AI / ML ===
 google-generativeai
-# Auth
+huggingface_hub
+
+# === Monitoring ===
+prometheus-fastapi-instrumentator
+
+# === Auth ===
 bcrypt
 PyJWT
 passlib[bcrypt]
 python-multipart
 python-jose[cryptography]
-# Workflow
+
+# === Email ===
+fastapi-mail==1.4.1
+
+# === Workflow ===
 inngest
+
+# === Broker API (Shoonya) ===
 NorenRestApiPy
+websocket-client
 pyotp
+
+# === Utilities ===
 python-dotenv

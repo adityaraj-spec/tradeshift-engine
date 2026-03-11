@@ -5,6 +5,7 @@ import { AuthProvider } from './context/AuthContext';
 import Layout from './components/layout/layout';
 import Home from './pages/Home';
 import Home1 from './pages/Home1';
+import ResearchHub from './pages/ResearchHub';
 import AuthLayout from './components/auth/AuthLayout';
 import SignIn from './pages/auth/SignIn';
 import SignUp from './pages/auth/SignUp';
@@ -20,6 +21,7 @@ export default function App() {
               <Route path="/" element={<Layout />}>
                 <Route index element={<Home />} />
                 <Route path="home1" element={<Home1 />} />
+                <Route path="research/:symbol" element={<ResearchHub />} />
               </Route>
               <Route path="/auth" element={<AuthLayout />}>
                 <Route path="sign-in" element={<SignIn />} />

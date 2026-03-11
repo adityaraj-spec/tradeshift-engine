@@ -33,8 +33,8 @@ export const SymbolSearch: React.FC<SymbolSearchProps> = ({ open, onOpenChange, 
         const fetchAvailableSymbols = async () => {
             setIsLoading(true);
             try {
-                // console.log("Fetching available symbols...");
-                const response = await fetch('http://localhost:8000/api/available-symbols');
+                const apiBase = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000';
+                const response = await fetch(`${apiBase}/api/available-symbols`);
                 if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
                 const data = await response.json();
 

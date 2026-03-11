@@ -1,17 +1,21 @@
-import { useState } from 'react';
-import {
-    PlusCircle, BarChart2, LayoutTemplate, LayoutGrid,
-    Bell, Rewind, Settings, Maximize, Camera
+    Bell, Rewind, Settings, Maximize, Camera, Newspaper, SearchCode
 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { SymbolSearchModal } from '../features/SymbolSearchModal';
 import { useGame } from '../../hooks/useGame';
 import { toast } from 'sonner';
 
-const TopToolbar = () => {
+interface TopToolbarProps {
+    isNewsOpen?: boolean;
+    onToggleNews?: () => void;
+}
+
+const TopToolbar = ({ isNewsOpen, onToggleNews }: TopToolbarProps) => {
     const { selectedSymbol, isReplayActive, toggleReplay } = useGame();
     const [isSearchOpen, setIsSearchOpen] = useState(false);
+    const navigate = useNavigate();
 
     return (
         <div className="h-12 border-b border-tv-border bg-tv-bg-base flex items-center px-4 justify-between text-tv-text-secondary select-none">
@@ -89,6 +93,28 @@ const TopToolbar = () => {
 
             {/* RIGHT CONTROLS */}
             <div className="flex items-center space-x-1 h-full">
+                {/* News Panel Toggle */}
+                <Button
+                    variant="ghost"
+                    size="icon"
+                    className={`h-8 w-8 hover:bg-tv-bg-pane/50 hover:text-blue-500 ${isNewsOpen ? 'text-blue-500 bg-tv-bg-pane/50' : ''}`}
+                    title="News AI Panel"
+                    onClick={onToggleNews}
+                >
+                    <Newspaper size={18} />
+                </Button>
+
+                {/* Research Hub Link */}
+                <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8 hover:bg-tv-bg-pane/50 hover:text-primary"
+                    title="Stock Research Hub (FinGPT)"
+                    onClick={() => navigate(`/research/${selectedSymbol || 'RELIANCE'}`)}
+                >
+                    <SearchCode size={18} />
+                </Button>
+
                 <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-tv-bg-pane/50 hover:text-blue-500" title="Chart Settings" onClick={() => toast.info('Settings opening...')}>
                     <Settings size={18} />
                 </Button>

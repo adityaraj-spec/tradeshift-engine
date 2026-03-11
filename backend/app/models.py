@@ -50,3 +50,53 @@ class User(Base):
     risk_tolerance = Column(String, nullable=True)    # e.g., "Low", "Medium", "High"
     preferred_industries = Column(String, nullable=True) # e.g., "Technology", "Healthcare"
     created_at = Column(DateTime, default=datetime.utcnow)
+
+
+class StockFundamental(Base):
+    """
+    Model for key stock ratios and fundamental metrics.
+    """
+    __tablename__ = "stock_fundamentals"
+
+    id = Column(Integer, primary_key=True, index=True)
+    symbol = Column(String, unique=True, index=True)
+    
+    # Valuation & Efficiency
+    pe_ratio = Column(Float, nullable=True)
+    pb_ratio = Column(Float, nullable=True)
+    dividend_yield = Column(Float, nullable=True)
+    roe = Column(Float, nullable=True)
+    roce = Column(Float, nullable=True)
+    
+    # Growth & Solvency
+    market_cap = Column(Float, nullable=True)
+    revenue_growth_5y = Column(Float, nullable=True)
+    profit_growth_5y = Column(Float, nullable=True)
+    debt_to_equity = Column(Float, nullable=True)
+    current_ratio = Column(Float, nullable=True)
+    
+    # Qualitative / Health
+    ebitda_margin = Column(Float, nullable=True)
+    free_cash_flow = Column(Float, nullable=True)
+    promoter_holding = Column(Float, nullable=True)
+    
+    last_updated = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+
+class StockFinancial(Base):
+    """
+    Model for yearly financial snapshots (Revenue, Profit, etc.)
+    Used for 5-Y CAGR visualizations.
+    """
+    __tablename__ = "stock_financials"
+
+    id = Column(Integer, primary_key=True, index=True)
+    symbol = Column(String, index=True)
+    year = Column(Integer)
+    
+    revenue = Column(Float, nullable=True)
+    net_profit = Column(Float, nullable=True)
+    operating_profit = Column(Float, nullable=True)
+    eps = Column(Float, nullable=True)
+    
+    last_updated = Column(DateTime, default=datetime.utcnow)

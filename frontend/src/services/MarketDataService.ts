@@ -2,11 +2,14 @@ import type { CandleData } from '../types';
 
 type MessageHandler = (data: any) => void;
 
-const API_BASE = 'http://localhost:8000';
+const API_BASE = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000';
+
+// Derive WebSocket URL from API_BASE
+const WS_BASE = API_BASE.replace('http://', 'ws://').replace('https://', 'wss://');
 
 export class MarketDataService {
     private ws: WebSocket | null = null;
-    private url: string = `ws://localhost:8000/ws/ticker`;
+    private url: string = `${WS_BASE}/ws/ticker`;
     private onMessageCallback: MessageHandler | null = null;
 
     constructor(url?: string) {

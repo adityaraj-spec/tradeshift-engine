@@ -17,7 +17,10 @@ from prometheus_fastapi_instrumentator import Instrumentator
 from app.oms import OrderManager
 from app import auth
 from app.routers import inngest
-from app.models import User  # Models must be imported for Base to detect them
+from app.models import User
+from app.database import get_db
+from app.news_service import fetch_news_for_date
+from app.nlp_engine import analyze_news_impact, ask_news_question
 from app.database import Base, connect_to_database
 
 # --- DB INITIALIZATION ---
@@ -312,9 +315,10 @@ async def get_available_dates(symbol: str):
     Get list of available dates for a specific symbol based on its parquet files.
     """
     try:
-        # Search for date-specific parquet files for the symbol
         import re
-        pattern = f"data/{symbol}_*.parquet"
+        # Extract the base symbol if it comes with a date suffix like RELIANCE-03-04
+        base_symbol = symbol.split('-')[0] if '-' in symbol else symbol
+        pattern = f"data/{base_symbol}_*.parquet"
         files = glob.glob(pattern)
         
         dates = []
@@ -347,7 +351,8 @@ async def get_historical_candles(symbol: str, limit: int = 500, date: str = None
         JSON list of {time, open, high, low, close} objects
     """
     try:
-        df, _, _ = load_parquet_for_symbol(symbol, date)
+        base_symbol = symbol.split('-')[0] if '-' in symbol else symbol
+        df, _, _ = load_parquet_for_symbol(base_symbol, date)
 
         # Resolve the datetime column
         time_col = next((c for c in ['datetime', 'date', 'time'] if c in df.columns), None)
@@ -395,6 +400,53 @@ async def get_historical_candles(symbol: str, limit: int = 500, date: str = None
         print(f"❌ Error fetching historical data for {symbol}: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to fetch history: {str(e)}")
 
+# --- 7. STOCK RESEARCH HUB ENDPOINTS ---
+from app.fundamental_service import FundamentalService
+from app.nlp_engine import analyze_stock_fundamentals, explain_in_layman
+
+@app.get("/api/stock/{symbol}/profile")
+async def get_stock_profile(symbol: str, db=next(get_db())):
+    """
+    Returns fundamental metrics and yearly financials for a stock.
+    """
+    try:
+        profile = FundamentalService.get_stock_profile(db, symbol.upper())
+        return profile
+    except Exception as e:
+        logger.error(f"Error fetching profile for {symbol}: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/stock/{symbol}/analyze")
+async def get_stock_analysis(symbol: str, db=next(get_db())):
+    """
+    Triggers FinGPT deep professional analysis.
+    """
+    try:
+        profile = FundamentalService.get_stock_profile(db, symbol.upper())
+        # We pass the fundamentals part of the profile to the AI
+        analysis = await analyze_stock_fundamentals(symbol.upper(), profile["fundamentals"])
+        return {"symbol": symbol, "analysis": analysis}
+    except Exception as e:
+        logger.error(f"Error analyzing stock {symbol}: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/stock/{symbol}/explain")
+async def get_layman_explanation(symbol: str, request: Request):
+    """
+    Converts professional analysis into Layman Mode.
+    """
+    try:
+        data = await request.json()
+        complex_info = data.get("text", "")
+        if not complex_info:
+            raise HTTPException(status_code=400, detail="Missing text to explain")
+            
+        explanation = await explain_in_layman(symbol.upper(), complex_info)
+        return {"symbol": symbol, "explanation": explanation}
+    except Exception as e:
+        logger.error(f"Error generating layman explanation for {symbol}: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
 # --- 6. WEBSOCKET ENDPOINT ---
 @app.websocket("/ws/ticker")
 async def websocket_endpoint(websocket: WebSocket):
@@ -410,6 +462,7 @@ async def websocket_endpoint(websocket: WebSocket):
     iterator        = None
     current_symbol  = "NIFTY"
     df_current      = None  # keep reference for restart
+    active_impact_observers = [] # Track news for 15-minute impact assessment
 
     try:
         while True:
@@ -427,7 +480,8 @@ async def websocket_endpoint(websocket: WebSocket):
 
                     # Load Parquet for the requested symbol
                     try:
-                        df_current, file_path, _ = load_parquet_for_symbol(symbol, target_date)
+                        base_symbol = symbol.split('-')[0] if '-' in symbol else symbol
+                        df_current, file_path, _ = load_parquet_for_symbol(base_symbol, target_date)
                     except FileNotFoundError as e:
                         await websocket.send_json({"type": "ERROR", "message": str(e)})
                         print(f"❌ {e}")
@@ -478,6 +532,14 @@ async def websocket_endpoint(websocket: WebSocket):
                     is_running = True
                     print(f"▶️  Simulation Started | Symbol: {symbol} | Speed: {speed}x")
 
+                    # Fetch today's news for alignment with simulation ticks
+                    # This will be awaited inline since it's before is_running really starts cranking
+                    try:
+                        active_news = await fetch_news_for_date(symbol, target_date)
+                    except Exception as e:
+                        print(f"⚠️ Failed to fetch news for {target_date}: {e}")
+                        active_news = []
+
                 elif command == "BUY":
                     oms.buy(last_tick_price, qty=50)
 
@@ -487,6 +549,24 @@ async def websocket_endpoint(websocket: WebSocket):
                 elif command == "STOP":
                     is_running = False
                     print("⏹️ Simulation Stopped by client")
+
+                elif command == "NEWS_QUESTION":
+                    q_text = message.get("question")
+                    news_id = message.get("news_id")
+                    if 'active_news' in locals():
+                        target_news = next((n for idx, n in enumerate(active_news) if idx == news_id), None)
+                        if target_news:
+                            async def fetch_answer(nq, ni, sym, nid):
+                                ans = await ask_news_question(ni["title"], ni["description"], nq, sym)
+                                await websocket.send_json({
+                                    "type": "NEWS_ANSWER",
+                                    "data": {
+                                        "id": nid,
+                                        "question": nq,
+                                        "answer": ans
+                                    }
+                                })
+                            asyncio.create_task(fetch_answer(q_text, target_news, current_symbol, news_id))
 
                 elif command == "SPEED":
                     speed = float(message.get("speed", 1.0))
@@ -557,6 +637,69 @@ async def websocket_endpoint(websocket: WebSocket):
                     print(f"🔴 Send Error: {e}")
                     is_running = False
                     break
+
+                # --- NEW: Synchronized News Injection ---
+                for idx, n_item in enumerate(list(active_news)):
+                    if not n_item.get("analyzed") and tick_time >= n_item["timestamp"]:
+                        # Mark as triggered in simulation context
+                        active_news[idx]["analyzed"] = True
+                        print(f"📰 FLASHING NEWS: {n_item['title']} at simulated time {tick_time}")
+                        
+                        # 1. Flash the news immediately to frontend
+                        asyncio.create_task(websocket.send_json({
+                            "type": "NEWS_FLASH",
+                            "data": {
+                                "id": idx,
+                                "symbol": current_symbol,
+                                "title": n_item["title"],
+                                "description": n_item["description"],
+                                "time_str": n_item["time_str"],
+                                "source": n_item["source"],
+                                "url": n_item["url"]
+                            }
+                        }))
+                        
+                        # 2. Trigger FinGPT analysis in background
+                        async def perform_analysis(item, item_idx, sym):
+                            import traceback
+                            try:
+                                result = await analyze_news_impact(item["title"], item["description"], sym)
+                                await websocket.send_json({
+                                    "type": "NEWS_ANALYSIS",
+                                    "data": {
+                                        "id": item_idx,
+                                        "analysis": result["analysis"],
+                                        "sentiment": result["sentiment"],
+                                        "predicted_impact": result.get("predicted_impact", "Unknown")
+                                    }
+                                })
+                            except Exception as ex:
+                                print(f"Error in FinGPT analysis: {ex}\n{traceback.format_exc()}")
+                                
+                        asyncio.create_task(perform_analysis(n_item, idx, current_symbol))
+
+                        # 3. Register observer for 15m quantized impact
+                        active_impact_observers.append({
+                            "news_id": idx,
+                            "baseline_price": last_tick_price,
+                            "target_time": tick_time + datetime.timedelta(minutes=15)
+                        })
+                
+                # --- PROCESS IMPACT OBSERVERS ---
+                for obs in list(active_impact_observers):
+                    if tick_time >= obs["target_time"]:
+                        pct_change = ((last_tick_price - obs["baseline_price"]) / obs["baseline_price"]) * 100
+                        asyncio.create_task(websocket.send_json({
+                            "type": "NEWS_IMPACT_RESULT",
+                            "data": {
+                                "id": obs["news_id"],
+                                "actual_impact": f"{pct_change:+.2f}% in 15m",
+                                "price_start": obs["baseline_price"],
+                                "price_end": last_tick_price
+                            }
+                        }))
+                        active_impact_observers.remove(obs)
+                # ----------------------------------------
 
                 # Sleep per tick: 60s / (num_ticks * speed)
                 # At 1x: 60/60 = 1.0s per tick → 60s per candle

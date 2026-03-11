@@ -3,6 +3,7 @@ import { ChevronLeft, ChevronRight, CalendarRange } from 'lucide-react';
 import Sidebar from '../components/layout/Sidebar';
 import type { Page } from '../components/layout/Sidebar';
 import ChartArea from '../components/features/ChartArea';
+import NewsPanel from '../components/features/NewsPanel';
 import HistoryPage from './HistoryPage';
 import SettingsPage from './SettingsPage';
 import TopToolbar from '../components/layout/TopToolbar';
@@ -12,6 +13,7 @@ import { Button } from '@/components/ui/button';
 const Home = () => {
   const [page, setPage] = useState<Page>('terminal');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [isNewsOpen, setIsNewsOpen] = useState(false);
 
   return (
     <div className="flex h-screen w-full bg-tv-bg-base text-tv-text-primary overflow-hidden font-sans">
@@ -39,7 +41,7 @@ const Home = () => {
           {page === 'terminal' && (
             <div className="flex flex-col h-full w-full">
               {/* TOP TOOLBAR */}
-              <TopToolbar />
+              <TopToolbar isNewsOpen={isNewsOpen} onToggleNews={() => setIsNewsOpen(prev => !prev)} />
 
               <div className="flex flex-1 min-h-0 relative">
                 {/* LEFT TOOLBAR */}
@@ -48,6 +50,11 @@ const Home = () => {
                 {/* CENTER CHART AREA */}
                 <div className="flex-1 relative bg-tv-bg-base pb-7">
                   <ChartArea />
+                </div>
+
+                {/* RIGHT NEWS PANEL (Toggleable) */}
+                <div className={`transition-all duration-300 ease-in-out overflow-hidden ${isNewsOpen ? 'w-80' : 'w-0'}`}>
+                  {isNewsOpen && <div className="w-80 h-full"><NewsPanel /></div>}
                 </div>
               </div>
 

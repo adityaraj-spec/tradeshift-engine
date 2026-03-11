@@ -1,15 +1,18 @@
-# 1. Use the official Node.js image (Lightweight version)
-FROM node:18-alpine
+# 1. Use the official Node.js image (version 22 for latest Vite/Tailwind support)
+FROM node:22-alpine
+
+# 1b. Add compatibility for native binaries
+RUN apk add --no-cache libc6-compat
 
 # 2. Set the working directory inside the container
 WORKDIR /app
 
-# 3. Copy package.json and package-lock.json FIRST
-# This allows Docker to cache dependencies if they haven't changed.
-COPY package*.json ./
+# 3. Copy package.json ONLY (avoid package-lock.json platform issues)
+COPY package.json ./
 
 # 4. Install dependencies inside the container
-RUN npm install
+# We force all platforms to ensure native binaries (Rollup, LightningCSS) are present
+RUN npm install --include=optional --os=linux --cpu=arm64
 
 # 5. Copy the rest of your code
 COPY . .
