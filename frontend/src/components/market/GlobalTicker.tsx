@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
 import axios from 'axios';
-import { ArrowUpRight, ArrowDownRight } from 'lucide-react';
+import { ArrowUpRight, ArrowDownRight, Clock } from 'lucide-react';
+import { useGame } from '../../hooks/useGame';
 
-interface IndexData {
+export interface IndexData {
   name: string;
   price: number;
   change: number;
@@ -11,7 +12,8 @@ interface IndexData {
 }
 
 export const GlobalTicker = () => {
-  const [indices, setIndices] = useState<IndexData[]>([]);
+  const [liveIndices, setLiveIndices] = useState<IndexData[]>([]);
+  const { isPlaying, simulatedIndices } = useGame();
 
   useEffect(() => {
     const fetchIndices = async () => {
@@ -23,7 +25,7 @@ export const GlobalTicker = () => {
         const core = response.data.filter((idx: any) => 
           idx.name === 'NIFTY 50' || idx.name === 'SENSEX'
         );
-        setIndices(core);
+        setLiveIndices(core);
       } catch (err) {
         console.error('Failed to fetch ticker data', err);
       }
@@ -34,11 +36,24 @@ export const GlobalTicker = () => {
     return () => clearInterval(interval);
   }, []);
 
-  if (indices.length === 0) return null;
+  // Decide which data source to render
+  const displayIndices = isPlaying 
+      ? simulatedIndices.filter((idx) => idx.name === 'NIFTY 50' || idx.name === 'SENSEX')
+      : liveIndices;
+
+  if (displayIndices.length === 0) return null;
 
   return (
-    <div className="hidden lg:flex items-center gap-6 px-4 py-1.5 rounded-full bg-tv-bg-base/60 border border-tv-border/50 shadow-inner ml-4 backdrop-blur-sm">
-      {indices.map(idx => (
+    <div className={`hidden lg:flex items-center gap-6 px-4 py-1.5 rounded-full border shadow-inner ml-4 backdrop-blur-sm transition-colors duration-300 ${isPlaying ? 'bg-indigo-500/10 border-indigo-500/30' : 'bg-tv-bg-base/60 border-tv-border/50'}`}>
+      
+      {isPlaying && (
+        <div className="flex items-center text-xs font-bold text-indigo-400 gap-1.5 animate-pulse mr-2">
+            <Clock size={14} />
+            <span>SIM SYNC</span>
+        </div>
+      )}
+
+      {displayIndices.map(idx => (
         <div key={idx.name} className="flex items-center gap-2 text-sm font-mono tracking-tight">
           <span className="text-tv-text-secondary font-sans font-medium text-xs uppercase">{idx.name}</span>
           <span className="text-tv-text-primary font-semibold">{idx.price.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>

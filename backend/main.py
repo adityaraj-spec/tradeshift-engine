@@ -17,7 +17,7 @@ from redis import Redis
 from prometheus_fastapi_instrumentator import Instrumentator
 from app.oms import OrderManager
 from app import auth
-from app.routers import inngest
+from app.routers import inngest, portfolio, history
 from app.models import User
 from app.database import get_db
 from app.news_service import fetch_news_for_date
@@ -60,6 +60,7 @@ import traceback
 
 from apscheduler.schedulers.background import BackgroundScheduler
 from app.market_service import market_service
+from app.live_market import shoonya_live
 
 # --- BACKGROUND JOBS ---
 scheduler = BackgroundScheduler()
@@ -81,6 +82,11 @@ def refresh_market_cache():
 scheduler.add_job(refresh_market_cache, 'interval', minutes=15)
 scheduler.start()
 
+@app.on_event("startup")
+async def startup_event():
+    # Attempt to connect to Shoonya Live WS in the background
+    asyncio.create_task(shoonya_live.connect())
+
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
     error_msg = f"🔥 UNHANDLED EXCEPTION: {str(exc)}\n{traceback.format_exc()}"
@@ -101,6 +107,8 @@ app.add_middleware(
 
 app.include_router(auth.router)
 app.include_router(inngest.router)
+app.include_router(portfolio.router)
+app.include_router(history.router)
 
 # --- 3. INFRASTRUCTURE CONNECTIONS ---
 
@@ -119,13 +127,15 @@ except Exception:
     print("⚠️ Redis not connected")
 
 # --- 4. HELPER FUNCTION: Load Parquet by Symbol ---
-def load_parquet_for_symbol(symbol: str, target_date: str = None):
+def load_parquet_for_symbol(symbol: str, target_date: str = None, allow_fallback: bool = False):
     """
-    Load Parquet file for a given symbol from the data/ directory.
+    Load data for a specific symbol. from the data/ directory.
     
     Args:
         symbol (str): Symbol name (e.g., 'NIFTY', 'BANKNIFTY', 'NIFTY_50')
         target_date (str): Optional date string (e.g., '2026-03-02') to load specific date file.
+        allow_fallback (bool): If True, and no specific target_date file is found,
+                               it will try to load the most recent file for the symbol.
         
     Returns:
         tuple: (DataFrame, file_path, symbol_name)
@@ -142,9 +152,10 @@ def load_parquet_for_symbol(symbol: str, target_date: str = None):
             matching_files.extend(date_match)
 
     # Search for files matching the pattern (if no date or date file not found)
-    if not matching_files:
+    if not matching_files and allow_fallback:
         pattern = f"data/{symbol}_*.parquet"
         matching_files = glob.glob(pattern)
+        print(f"🔄 Fallback triggered. Searching for {pattern}... found {len(matching_files)} files.")
         
         # Try exact match (e.g., NIFTY_50_1min.parquet for symbol "NIFTY_50")
         pattern_exact = f"data/{symbol}.parquet"
@@ -572,7 +583,42 @@ async def get_market_options(symbol: str):
         logger.error(f"Error fetching options for {symbol}: {e}")
         raise HTTPException(status_code=500, detail="Failed to fetch options chain")
 
-# --- 6. WEBSOCKET ENDPOINT ---
+# --- 6. WEBSOCKET ENDPOINTS ---
+@app.websocket("/ws/live_indices")
+async def live_indices_websocket(websocket: WebSocket):
+    await websocket.accept()
+    print("🟢 Live Indices Client Connected")
+    
+    # Send latest cached data immediately
+    if shoonya_live.latest_data:
+        try:
+            await websocket.send_json(shoonya_live.latest_data)
+        except Exception:
+            pass
+
+    # Callback to push updates to this specific client
+    async def push_update(data):
+        try:
+            # Send the entire dictionary so the frontend gets all indices at once
+            await websocket.send_json(shoonya_live.latest_data)
+        except Exception as e:
+            print(f"🔴 Live Indices Send Error: {e}")
+            raise e # Trigger disconnect handling
+
+    shoonya_live.add_callback(push_update)
+    
+    try:
+        while True:
+            # Just keep connection alive, optionally handle basic ping/pong
+            msg = await websocket.receive_text()
+    except WebSocketDisconnect:
+        print("🔴 Live Indices Client Disconnected")
+    except Exception as e:
+        print(f"🔴 Live Indices Error: {e}")
+    finally:
+        shoonya_live.remove_callback(push_update)
+
+
 @app.websocket("/ws/ticker")
 async def websocket_endpoint(websocket: WebSocket):
     await websocket.accept()
@@ -585,6 +631,8 @@ async def websocket_endpoint(websocket: WebSocket):
     oms             = OrderManager()
     last_tick_price = 21500.0
     iterator        = None
+    indices_iterators = {}    # { "NIFTY": iterator, "BANKNIFTY": iterator }
+    indices_opens   = {}      # { "NIFTY": open_price, "BANKNIFTY": open_price }
     current_symbol  = "NIFTY"
     df_current      = None  # keep reference for restart
     active_impact_observers = [] # Track news for 15-minute impact assessment
@@ -654,6 +702,46 @@ async def websocket_endpoint(websocket: WebSocket):
                     print(f"✅ Streaming {len(filtered_df)} candles for {symbol} on {target_date}")
                     # Use list-of-dicts — consistent with .get() row access below
                     iterator   = iter(filtered_df.to_dict(orient="records"))
+                    
+                    # --- Load Benchmark Indices for Sync ---
+                    indices_iterators = {}
+                    indices_opens = {}
+                    for idx_name in ["NIFTY", "BANKNIFTY", "SENSEX"]:
+                        try:
+                            idx_df, _, _ = load_parquet_for_symbol(idx_name, target_date, allow_fallback=True)
+                            ic_date_col = next((c for c in ['datetime', 'date', 'time'] if c in idx_df.columns), None)
+                            if ic_date_col:
+                                temp_idx = idx_df.copy()
+                                if not pd.api.types.is_datetime64_any_dtype(temp_idx[ic_date_col]):
+                                    temp_idx[ic_date_col] = pd.to_datetime(
+                                        temp_idx[ic_date_col].astype(str).str.replace('Ok ', '', regex=False).str.strip(), 
+                                        dayfirst=False, errors='coerce'
+                                    )
+                                
+                                # If fallback was used, the inherent date will be wrong. 
+                                # We shift the date of the index data to match the target_dt exactly.
+                                first_valid_dt = temp_idx[ic_date_col].dropna().iloc[0] if not temp_idx[ic_date_col].isnull().all() else None
+                                if first_valid_dt and first_valid_dt.date() != target_dt:
+                                    # Calculate difference in days to map to target_dt
+                                    delta = pd.Timestamp(target_dt) - pd.Timestamp(first_valid_dt.date())
+                                    temp_idx[ic_date_col] = temp_idx[ic_date_col] + delta
+                                    # print(f"⏳ Shifted {idx_name} data by {delta.days} days to match {target_dt}")
+                                
+                                mask_idx = (
+                                    (temp_idx[ic_date_col].dt.date == target_dt) &
+                                    (temp_idx[ic_date_col].dt.time >= datetime.time(9, 15)) &
+                                    (temp_idx[ic_date_col].dt.time <= datetime.time(15, 30))
+                                )
+                                f_idx_df = temp_idx[mask_idx].sort_values(by=ic_date_col)
+                                if not f_idx_df.empty:
+                                    indices_iterators[idx_name] = iter(f_idx_df.to_dict(orient="records"))
+                                    indices_opens[idx_name] = float(f_idx_df.iloc[0]['open'])
+                                    print(f"✅ Loaded {len(f_idx_df)} sync candles for {idx_name}")
+                                else:
+                                    print(f"⚠️ Index {idx_name} matched no time rows for {target_dt}")
+                        except Exception as e:
+                            print(f"⚠️ Could not sync index {idx_name}: {e}")
+
                     is_running = True
                     print(f"▶️  Simulation Started | Symbol: {symbol} | Speed: {speed}x")
 
@@ -732,9 +820,35 @@ async def websocket_endpoint(websocket: WebSocket):
                 print(f"❌ Row parse error: {e} | Row keys: {list(row.keys())}")
                 continue
 
+            # Advance index iterators
+            indices_current_rows = {}
+            for idx_name, idx_iter in list(indices_iterators.items()):
+                try:
+                    indices_current_rows[idx_name] = next(idx_iter)
+                except StopIteration:
+                    # Remove depleted iterator
+                    del indices_iterators[idx_name]
+
             # Generate micro-ticks (Brownian bridge across the minute)
             try:
                 ticks = synthesizer.generate_ticks(open_p, high, low, close, num_ticks=60)
+                
+                # Generate corresponding ticks for synchronized indices
+                indices_ticks = {}
+                for idx_name, idx_row in indices_current_rows.items():
+                    try:
+                        idx_ticks = synthesizer.generate_ticks(
+                            float(idx_row.get('open', 0)), 
+                            float(idx_row.get('high', 0)), 
+                            float(idx_row.get('low', 0)), 
+                            float(idx_row.get('close', 0)), 
+                            num_ticks=60
+                        )
+                        indices_ticks[idx_name] = idx_ticks
+                    except Exception as e:
+                        print(f"⚠️ Index Ticks Error ({idx_name}): {e}")
+                        indices_ticks[idx_name] = [float(idx_row.get('close', 0))] * 60
+                        
             except Exception as e:
                 print(f"❌ Synthesizer Error: {e}")
                 continue
@@ -756,6 +870,36 @@ async def websocket_endpoint(websocket: WebSocket):
                         "volume":    int(row.get('volume', 0)),
                     }
                 }
+                
+                # Construct combined payload for indices
+                indices_payload = {}
+                for idx_name, ticks_arr in indices_ticks.items():
+                    if i < len(ticks_arr):
+                        curr_idx_price = float(ticks_arr[i])
+                        day_open = indices_opens.get(idx_name, curr_idx_price)
+                        change = curr_idx_price - day_open
+                        change_percent = (change / day_open) * 100 if day_open > 0 else 0
+                        # Formal mappings for the frontend
+                        display_name = idx_name
+                        if idx_name == "NIFTY": display_name = "NIFTY 50"
+                        
+                        indices_payload[display_name] = {
+                            "name": display_name,
+                            "price": round(curr_idx_price, 2),
+                            "change": round(change, 2),
+                            "change_percent": round(change_percent, 2),
+                            "is_positive": change >= 0
+                        }
+                        
+                if sum(len(x) for x in indices_payload.values()) > 0:
+                     try:
+                        await websocket.send_json({
+                            "type": "INDICES_TICK",
+                            "data": indices_payload
+                        })
+                     except Exception:
+                        pass # Ignore index push failure, prioritize main tick
+
                 try:
                     await websocket.send_json(payload)
                 except (WebSocketDisconnect, Exception) as e:

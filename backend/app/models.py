@@ -37,6 +37,18 @@ class TradeLog(Base):
 
     time_since_last_trade = Column(Float, nullable=True)
 
+class PortfolioHolding(Base):
+    """
+    Model representing an actively held position in the user's portfolio.
+    """
+    __tablename__ = "portfolio_holdings"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, index=True) # Linking to User if needed
+    symbol = Column(String, index=True)
+    quantity = Column(Integer)
+    average_cost = Column(Float)
+    first_purchase_date = Column(DateTime, default=datetime.utcnow)
 
 class User(Base):
     __tablename__ = "users"

@@ -8,11 +8,13 @@ import {
   PieChart,
   RefreshCw,
   Search,
-  ChevronRight
+  ChevronRight,
+  Clock
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
 import { BarChart, Bar, XAxis, YAxis, Tooltip as RechartsTooltip, ResponsiveContainer, Cell } from 'recharts';
+import { useGame } from '../context/GameContext';
 
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
@@ -45,6 +47,9 @@ const MarketPage: React.FC = () => {
   const [isOptionsAdvanced, setIsOptionsAdvanced] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [lastRefreshed, setLastRefreshed] = useState<Date>(new Date());
+  const [isLiveWsConnected, setIsLiveWsConnected] = useState(false);
+  
+  const { isPlaying, simulatedIndices, currentTime } = useGame();
   
   const navigate = useNavigate();
 
@@ -88,10 +93,73 @@ const MarketPage: React.FC = () => {
 
   useEffect(() => {
     fetchMarketData();
-    // Auto refresh every 5 minutes
+    // Auto refresh every 5 minutes (for sectors and movers)
     const interval = setInterval(fetchMarketData, 5 * 60 * 1000);
     return () => clearInterval(interval);
   }, []);
+
+  useEffect(() => {
+      // Only connect to live WS if we are NOT playing the simulator
+      if (isPlaying) return;
+
+      // Determine WS URL based on API_BASE
+      const wsUrl = API_BASE.replace('http', 'ws') + '/ws/live_indices';
+    const ws = new WebSocket(wsUrl);
+
+    ws.onopen = () => {
+      console.log('Connected to Live Market WebSocket');
+      setIsLiveWsConnected(true);
+    };
+
+    ws.onmessage = (event) => {
+      try {
+        const data = JSON.parse(event.data);
+        // data might be a dictionary of all active indices: { "NIFTY 50": { price: ... }, "BANK NIFTY": { ... } }
+        setIndices(prev => {
+          if (!prev || prev.length === 0) return prev;
+          
+          let updated = [...prev];
+          let changed = false;
+          
+          Object.values(data).forEach((update: any) => {
+            if (update && update.name) {
+              const idx = updated.findIndex(i => i.name === update.name);
+              if (idx !== -1) {
+                // Only update if price actually changed or we got new data
+                if (updated[idx].price !== update.price) {
+                    updated[idx] = { 
+                        ...updated[idx], 
+                        price: update.price || updated[idx].price,
+                        change: update.change !== undefined ? update.change : updated[idx].change,
+                        change_percent: update.change_percent !== undefined ? update.change_percent : updated[idx].change_percent,
+                        is_positive: update.is_positive !== undefined ? update.is_positive : updated[idx].is_positive
+                    };
+                    changed = true;
+                }
+              }
+            }
+          });
+          
+          return changed ? updated : prev;
+        });
+        
+      } catch (err) {
+        console.error('Error parsing live index data:', err);
+      }
+    };
+
+    ws.onclose = () => {
+      console.log('Disconnected from Live Market WebSocket');
+      setIsLiveWsConnected(false);
+    };
+
+    return () => {
+      ws.close();
+    };
+  }, [isPlaying]);
+
+  // Determine what indices to show based on simulation state
+  const displayIndices = isPlaying ? simulatedIndices : indices;
 
   const formatCurrency = (val: number) => new Intl.NumberFormat('en-IN').format(val);
 
@@ -101,14 +169,28 @@ const MarketPage: React.FC = () => {
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white/[0.02] border border-white/5 p-6 rounded-3xl backdrop-blur-md">
         <div>
           <h1 className="text-3xl font-black tracking-tight text-white mb-1">Markets Overview</h1>
-          <div className="flex items-center gap-2 text-xs text-gray-500 font-medium">
-            <span className="flex items-center gap-1.5 px-2 py-1 bg-green-500/10 text-green-500 rounded-md border border-green-500/20">
-              <span className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse"></span>
-              Market Open
-            </span>
-            <span>•</span>
-            <span>Last updated: {lastRefreshed.toLocaleTimeString()}</span>
-            <button onClick={fetchMarketData} className="ml-2 hover:text-white transition-colors" title="Refresh">
+          <div className="flex items-center gap-2 text-xs font-medium mt-2">
+            
+            {isPlaying ? (
+              <>
+                <span className="flex items-center gap-1.5 px-2 py-1 bg-indigo-500/10 text-indigo-400 rounded-md border border-indigo-500/20">
+                  <Clock className="w-3.5 h-3.5 animate-pulse" />
+                  SIMULATION SYNC: {currentTime?.toLocaleTimeString() ?? 'Loading...'}
+                </span>
+                <span className="flex items-center gap-1.5 px-2 py-1 bg-blue-500/10 text-blue-400 rounded-md border border-blue-500/20">
+                  Simulated Indices Active
+                </span>
+              </>
+            ) : (
+              <span className={`flex items-center gap-1.5 px-2 py-1 rounded-md border ${isLiveWsConnected ? 'bg-green-500/10 text-green-500 border-green-500/20' : 'bg-yellow-500/10 text-yellow-500 border-yellow-500/20'}`}>
+                <span className={`w-1.5 h-1.5 rounded-full ${isLiveWsConnected ? 'bg-green-500 animate-pulse' : 'bg-yellow-500'}`}></span>
+                {isLiveWsConnected ? 'Live Data Connected' : 'Connecting Live...'}
+              </span>
+            )}
+
+            <span className="text-gray-600">•</span>
+            <span className="text-gray-500">Last REST sync: {lastRefreshed.toLocaleTimeString()}</span>
+            <button onClick={fetchMarketData} className="ml-2 text-gray-500 hover:text-white transition-colors" title="Sync REST Data">
               <RefreshCw className={`w-3.5 h-3.5 ${isLoading ? 'animate-spin text-primary' : ''}`} />
             </button>
           </div>
@@ -150,10 +232,10 @@ const MarketPage: React.FC = () => {
         <div className="space-y-8">
           {/* Indices Cards */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            {isLoading && indices.length === 0 ? (
+            {isLoading && displayIndices.length === 0 ? (
               [1, 2, 3, 4].map(i => <div key={i} className="h-28 bg-white/5 animate-pulse rounded-2xl"></div>)
             ) : (
-              indices.map(idx => (
+              displayIndices.map((idx: any) => (
                 <div key={idx.symbol} className="bg-[#0a0a0a] border border-white/5 p-5 rounded-2xl hover:border-white/20 transition-all cursor-pointer group">
                   <div className="flex justify-between items-start mb-2">
                     <h3 className="text-sm font-bold text-gray-300 group-hover:text-white transition-colors">{idx.name}</h3>

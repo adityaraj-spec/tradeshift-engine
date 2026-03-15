@@ -19,6 +19,14 @@ export interface NewsItem {
   qa_history?: {question: string, answer: string}[];
 }
 
+export interface IndexData {
+  name: string;
+  price: number;
+  change: number;
+  change_percent: number;
+  is_positive: boolean;
+}
+
 interface GameState {
   isPlaying: boolean;
   speed: number;
@@ -29,6 +37,7 @@ interface GameState {
   historicalCandles: CandleData[];
   trades: Trade[];
   newsItems: NewsItem[];
+  simulatedIndices: IndexData[];
   theme: 'dark' | 'light';
   selectedSymbol: string;
   selectedDate: string;
@@ -68,6 +77,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode; }> = ({ childre
   const [historicalCandles, setHistoricalCandles] = useState<CandleData[]>([]);
   const [trades, setTrades] = useState<Trade[]>([]);
   const [newsItems, setNewsItems] = useState<NewsItem[]>([]);
+  const [simulatedIndices, setSimulatedIndices] = useState<IndexData[]>([]);
   const [theme, setTheme] = useState<'dark' | 'light'>('dark');
   const [selectedSymbol, setSelectedSymbol] = useState(DEFAULT_SYMBOL);
   const [isLoadingHistory, setIsLoadingHistory] = useState(false);
@@ -137,9 +147,10 @@ export const GameProvider: React.FC<{ children: React.ReactNode; }> = ({ childre
       return;
     }
 
-    // Clear existing chart data — replay starts from 9:15
+    // Clear existing chart and index data — replay starts from 9:15
     setHistoricalCandles([]);
     setCurrentCandle(null);
+    setSimulatedIndices([]);
 
     marketDataService.connect(speed, selectedSymbol, selectedDate);
 
@@ -212,6 +223,32 @@ export const GameProvider: React.FC<{ children: React.ReactNode; }> = ({ childre
         setHistoricalCandles(prev => [...prev, newCandle]); // Add to history
         setCurrentPrice(d.close);
         setCurrentTime(new Date(isoStr));
+      }
+
+      // INDICES_TICK event: synchronized background indices updates
+      if (payload.type === 'INDICES_TICK') {
+          const indexUpdates = payload.data;
+          setSimulatedIndices(prev => {
+              if (prev.length === 0) {
+                  return Object.values(indexUpdates) as IndexData[];
+              }
+              
+              const updated = [...prev];
+              let changed = false;
+              
+              Object.values(indexUpdates).forEach((update: any) => {
+                  const idx = updated.findIndex(i => i.name === update.name);
+                  if (idx !== -1) {
+                      updated[idx] = update;
+                      changed = true;
+                  } else {
+                      updated.push(update);
+                      changed = true;
+                  }
+              });
+              
+              return changed ? updated : prev;
+          });
       }
 
       // TICK event: sub-minute price updates within a candle
@@ -320,6 +357,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode; }> = ({ childre
     setTrades([]);
     setHistoricalCandles([]);
     setNewsItems([]);
+    setSimulatedIndices([]);
     setCurrentCandle(null);
   };
 
@@ -327,7 +365,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode; }> = ({ childre
     <GameContext.Provider
       value={{
         isPlaying, speed, balance, currentPrice, currentCandle, currentTime,
-        historicalCandles, trades, newsItems, theme, selectedSymbol, selectedDate, availableDates, isLoadingHistory, isReplayActive,
+        historicalCandles, trades, newsItems, simulatedIndices, theme, selectedSymbol, selectedDate, availableDates, isLoadingHistory, isReplayActive,
         togglePlay, toggleTheme, setSpeed, setSymbol, setDate,
         placeOrder, closePosition, resetSimulation, toggleReplay, clearHistoryForReplay, askNewsQuestion
       }}

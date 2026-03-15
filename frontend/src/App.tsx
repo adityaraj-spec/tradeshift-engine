@@ -13,6 +13,7 @@ import ScreenerPage from './pages/ScreenerPage';
 import MarketPage from './pages/MarketPage';
 import HistoryPage from './pages/HistoryPage';
 import SettingsPage from './pages/SettingsPage';
+import PortfolioPage from './pages/PortfolioPage';
 import { Toaster } from 'sonner';
 
 export default function App() {
@@ -28,6 +29,7 @@ export default function App() {
                 <Route path="markets" element={<MarketPage />} />
                 <Route path="screener" element={<ScreenerPage />} />
                 <Route path="history" element={<HistoryPage />} />
+                <Route path="portfolio" element={<PortfolioPage />} />
                 <Route path="settings" element={<SettingsPage />} />
                 <Route path="research/:symbol" element={<ResearchHub />} />
               </Route>

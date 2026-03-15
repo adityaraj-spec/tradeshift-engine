@@ -68,9 +68,9 @@ async def register(
     response.set_cookie(
         key="access_token",
         value=access_token,
-        httponly=True,   # Prevent XSS
-        secure=False,    # Set to True in Production (HTTPS)
-        samesite="lax",  # CSRF Protection
+        httponly=True,
+        secure=False,
+        samesite="lax",
         max_age=ACCESS_TOKEN_EXPIRE_MINUTES * 60
     )
 
@@ -117,7 +117,7 @@ def login(
         key="access_token",
         value=access_token,
         httponly=True,
-        secure=False, 
+        secure=False,
         samesite="lax",
         max_age=ACCESS_TOKEN_EXPIRE_MINUTES * 60
     )

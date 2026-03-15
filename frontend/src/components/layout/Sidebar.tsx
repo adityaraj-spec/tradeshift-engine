@@ -1,4 +1,4 @@
-import { LayoutDashboard, History, Settings, TrendingUp, Activity } from 'lucide-react';
+import { LayoutDashboard, History, Settings, TrendingUp, Activity, Briefcase } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 
 const Sidebar = () => {
@@ -11,6 +11,7 @@ const Sidebar = () => {
     if (path.startsWith('/markets')) return 'markets';
     if (path.startsWith('/screener')) return 'screener';
     if (path.startsWith('/history')) return 'history';
+    if (path.startsWith('/portfolio')) return 'portfolio';
     if (path.startsWith('/settings')) return 'settings';
     return 'terminal';
   };
@@ -54,6 +55,7 @@ const Sidebar = () => {
 
       <NavItem p="terminal" icon={LayoutDashboard} label="Trade" path="/" />
       <NavItem p="markets" icon={Activity} label="Markets" path="/markets" />
+      <NavItem p="portfolio" icon={Briefcase} label="Portfolio" path="/portfolio" />
       <NavItem p="screener" icon={TrendingUp} label="Screener" path="/screener" />
       <NavItem p="history" icon={History} label="History" path="/history" />
       <NavItem p="settings" icon={Settings} label="Config" path="/settings" />
