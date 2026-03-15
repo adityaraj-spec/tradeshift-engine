@@ -1,56 +1,413 @@
-import { useGame } from '../hooks/useGame';
+import { useState, useEffect, useCallback } from 'react';
+import axios from 'axios';
+import {
+  Calendar, Search, Download, Filter, TrendingUp, TrendingDown,
+  Clock, Target, RefreshCw, AlertCircle, Award, Briefcase, FileText, ChevronLeft, ChevronRight
+} from 'lucide-react';
+import { format } from 'date-fns';
 
-const HistoryPage = () => {
-  const { trades } = useGame();
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000';
+const api = axios.create({ baseURL: API_BASE_URL, withCredentials: true });
+
+export default function HistoryPage() {
+  const [trades, setTrades] = useState<any[]>([]);
+  const [summary, setSummary] = useState<any[]>([]);
+  const [symbols, setSymbols] = useState<string[]>([]);
+  
+  // Pagination & Filtering state
+  const [loading, setLoading] = useState(true);
+  const [total, setTotal] = useState(0);
+  const [page, setPage] = useState(1);
+  const [limit] = useState(15);
+  const [totalPages, setTotalPages] = useState(1);
+  
+  const [filters, setFilters] = useState({
+    dateFrom: '',
+    dateTo: '',
+    symbol: '',
+    direction: '',
+    search: '',
+  });
+
+  const [sortConfig, setSortConfig] = useState({ key: 'entry_time', order: 'desc' });
+
+  // Load symbols once
+  useEffect(() => {
+    api.get('/api/history/symbols').then(res => setSymbols(res.data.symbols || [])).catch(console.error);
+    fetchSummary();
+  }, []);
+
+  // Fetch Summary
+  const fetchSummary = async () => {
+    try {
+      const res = await api.get('/api/history/monthly-summary');
+      setSummary(res.data.months || []);
+    } catch (e) {
+      console.error('Failed to fetch summary:', e);
+    }
+  };
+
+  // Fetch Trades definition
+  const fetchTrades = useCallback(async () => {
+    setLoading(true);
+    try {
+      const params = new URLSearchParams();
+      if (filters.dateFrom) params.append('from', filters.dateFrom);
+      if (filters.dateTo) params.append('to', filters.dateTo);
+      if (filters.symbol) params.append('symbol', filters.symbol);
+      if (filters.direction) params.append('direction', filters.direction);
+      if (filters.search) params.append('search', filters.search);
+      
+      params.append('sort_by', sortConfig.key);
+      params.append('sort_order', sortConfig.order);
+      params.append('page', page.toString());
+      params.append('limit', limit.toString());
+
+      const res = await api.get(`/api/history/trades?${params.toString()}`);
+      setTrades(res.data.trades || []);
+      setTotal(res.data.total || 0);
+      setTotalPages(res.data.total_pages || 1);
+    } catch (e) {
+      console.error('Failed to fetch trades:', e);
+    } finally {
+      setLoading(false);
+    }
+  }, [filters, sortConfig, page, limit]);
+
+  // Refetch trades on dep change
+  useEffect(() => {
+    fetchTrades();
+  }, [fetchTrades]);
+
+  // Handlers
+  const handleSort = (key: string) => {
+    setSortConfig(current => ({
+      key,
+      order: current.key === key && current.order === 'desc' ? 'asc' : 'desc'
+    }));
+    setPage(1);
+  };
+
+  const handleExport = () => {
+    const params = new URLSearchParams();
+    if (filters.dateFrom) params.append('from', filters.dateFrom);
+    if (filters.dateTo) params.append('to', filters.dateTo);
+    if (filters.symbol) params.append('symbol', filters.symbol);
+    if (filters.direction) params.append('direction', filters.direction);
+    if (filters.search) params.append('search', filters.search);
+    
+    window.location.href = `${API_BASE_URL}/api/history/trades/export?${params.toString()}`;
+  };
+
+  const currentMonthSummary = summary.length > 0 ? summary[0] : null;
 
   return (
-    <div className="p-8 w-full max-w-4xl mx-auto font-sans">
-      <h2 className="text-2xl font-bold text-tv-text-primary mb-6">Trade History</h2>
-
-      <div className="bg-tv-bg-pane rounded-lg border border-tv-border overflow-hidden">
-        <table className="w-full text-left text-sm text-tv-text-secondary">
-          <thead className="bg-tv-bg-base text-tv-text-secondary uppercase text-xs">
-            <tr>
-              <th className="px-6 py-3">Time</th>
-              <th className="px-6 py-3">Symbol</th>
-              <th className="px-6 py-3">Type</th>
-              <th className="px-6 py-3 text-right">Qty</th>
-              <th className="px-6 py-3 text-right">Entry</th>
-              <th className="px-6 py-3 text-right">Exit</th>
-              <th className="px-6 py-3 text-right">P&L</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-tv-border">
-            {/* Filter and Map: Only show CLOSED trades in the table */}
-            {trades.filter(t => t.status === 'CLOSED').map(trade => (
-              <tr key={trade.id} className="hover:bg-tv-bg-base/50 transition-colors">
-                <td className="px-6 py-4">{trade.timestamp.toLocaleTimeString()}</td>
-                <td className="px-6 py-4 text-tv-text-primary font-medium">{trade.symbol}</td>
-                <td className="px-6 py-4">
-                  <span className={`${trade.type === 'BUY' ? 'text-[#089981]' : 'text-[#f23645]'}`}>
-                    {trade.type}
-                  </span>
-                </td>
-                <td className="px-6 py-4 text-right">{trade.quantity}</td>
-                <td className="px-6 py-4 text-right">{trade.entryPrice.toFixed(2)}</td>
-                <td className="px-6 py-4 text-right">{trade.exitPrice?.toFixed(2)}</td>
-                <td className={`px-6 py-4 text-right font-mono font-bold ${(trade.pnl || 0) >= 0 ? 'text-[#089981]' : 'text-[#f23645]'}`}>
-                  {(trade.pnl || 0) > 0 ? '+' : ''}{trade.pnl?.toFixed(2)}
-                </td>
-              </tr>
-            ))}
-
-            {/* Empty State Message */}
-            {trades.filter(t => t.status === 'CLOSED').length === 0 && (
-              <tr>
-                <td colSpan={7} className="px-6 py-8 text-center text-tv-text-secondary">No closed trades yet.</td>
-              </tr>
-            )}
-          </tbody>
-        </table>
+    <div className="p-6 max-w-7xl mx-auto space-y-6 w-full pb-20">
+      
+      {/* ─── HEADER & QUICK LINKS ─── */}
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight text-white flex items-center gap-3">
+            <Clock className="text-sidebar-primary" /> Trade History
+          </h1>
+          <p className="text-muted-foreground mt-1 text-sm">Review past trades, filter performance, and export tax reports.</p>
+        </div>
+        
+        <div className="flex items-center gap-3">
+          <div className="hidden md:flex bg-sidebar border border-sidebar-border rounded-lg p-1 mr-2">
+            <button className="px-3 py-1.5 text-xs text-muted-foreground hover:text-white transition-colors flex items-center gap-1.5 rounded-md hover:bg-sidebar-accent/20">
+              <FileText size={14} /> Trade Journal
+            </button>
+            <button className="px-3 py-1.5 text-xs text-muted-foreground hover:text-white transition-colors flex items-center gap-1.5 rounded-md hover:bg-sidebar-accent/20">
+              <Target size={14} /> Performance
+            </button>
+          </div>
+          <button onClick={handleExport} className="px-4 py-2 bg-sidebar-primary/10 border border-sidebar-primary/20 text-sidebar-primary hover:bg-sidebar-primary hover:text-black rounded-lg text-sm font-semibold transition-all flex items-center gap-2">
+            <Download size={16} /> Export CSV
+          </button>
+        </div>
       </div>
+
+      {/* ─── MONTHLY SUMMARY CARDS ─── */}
+      {currentMonthSummary && (
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
+          <SummaryCard 
+            icon={<Briefcase />} label="Total Trades" 
+            value={currentMonthSummary.total_trades} 
+            subtitle={`in ${currentMonthSummary.label}`} 
+          />
+          <SummaryCard 
+            icon={<Award />} label="Win Rate" 
+            value={`${currentMonthSummary.win_rate}%`} 
+            subtitle={`${currentMonthSummary.wins}W - ${currentMonthSummary.losses}L`}
+            color={currentMonthSummary.win_rate >= 50 ? 'text-green-500' : 'text-red-500'} 
+          />
+          <SummaryCard 
+            icon={<Target />} label="Net P&L" 
+            value={`₹${Math.abs(currentMonthSummary.total_pnl).toLocaleString('en-IN')}`} 
+            subtitle={currentMonthSummary.total_pnl >= 0 ? "Profitable month" : "Loss-making month"}
+            color={currentMonthSummary.total_pnl >= 0 ? 'text-green-500' : 'text-red-500'} 
+            isCurrency={true}
+            isPositive={currentMonthSummary.total_pnl >= 0}
+          />
+          <SummaryCard 
+            icon={<Clock />} label="Avg Hold Time" 
+            value={currentMonthSummary.avg_holding_time > 60 ? `${(currentMonthSummary.avg_holding_time / 60).toFixed(1)}h` : `${currentMonthSummary.avg_holding_time}m`} 
+            subtitle="Time in market" 
+            color="text-blue-400" 
+          />
+        </div>
+      )}
+
+      {/* ─── FILTER BAR ─── */}
+      <div className="bg-sidebar border border-sidebar-border rounded-2xl p-4 flex flex-col lg:flex-row gap-4 items-end">
+        
+        <div className="flex-1 w-full flex flex-col md:flex-row gap-4">
+          <div className="flex-1 space-y-1.5">
+            <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Search</label>
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <input 
+                type="text" 
+                placeholder="Symbol or exit reason..."
+                className="w-full bg-[#1e1e1e] border border-[#2e2e2e] rounded-lg pl-9 pr-4 py-2 text-sm text-white focus:outline-none focus:border-sidebar-primary transition-colors"
+                value={filters.search}
+                onChange={e => { setFilters(f => ({...f, search: e.target.value})); setPage(1); }}
+              />
+            </div>
+          </div>
+          
+          <div className="w-full md:w-48 space-y-1.5">
+            <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Symbol</label>
+            <select 
+              className="w-full bg-[#1e1e1e] border border-[#2e2e2e] rounded-lg px-4 py-2 text-sm text-white focus:outline-none focus:border-sidebar-primary appearance-none"
+              value={filters.symbol}
+              onChange={e => { setFilters(f => ({...f, symbol: e.target.value})); setPage(1); }}
+            >
+              <option value="">All Symbols</option>
+              {symbols.map(s => <option key={s} value={s}>{s}</option>)}
+            </select>
+          </div>
+
+          <div className="w-full md:w-36 space-y-1.5">
+            <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Direction</label>
+            <select 
+              className="w-full bg-[#1e1e1e] border border-[#2e2e2e] rounded-lg px-4 py-2 text-sm text-white focus:outline-none focus:border-sidebar-primary appearance-none"
+              value={filters.direction}
+              onChange={e => { setFilters(f => ({...f, direction: e.target.value})); setPage(1); }}
+            >
+              <option value="">All</option>
+              <option value="BUY">Long (BUY)</option>
+              <option value="SELL">Short (SELL)</option>
+            </select>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <div className="w-full md:w-40 space-y-1.5">
+              <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">From Date</label>
+              <input 
+                type="date" 
+                className="w-full bg-[#1e1e1e] border border-[#2e2e2e] rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-sidebar-primary color-scheme-dark"
+                value={filters.dateFrom}
+                onChange={e => { setFilters(f => ({...f, dateFrom: e.target.value})); setPage(1); }}
+              />
+            </div>
+            <div className="mt-6 text-muted-foreground">-</div>
+            <div className="w-full md:w-40 space-y-1.5">
+              <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">To Date</label>
+              <input 
+                type="date" 
+                className="w-full bg-[#1e1e1e] border border-[#2e2e2e] rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-sidebar-primary color-scheme-dark"
+                value={filters.dateTo}
+                onChange={e => { setFilters(f => ({...f, dateTo: e.target.value})); setPage(1); }}
+              />
+            </div>
+          </div>
+        </div>
+
+        <button 
+          onClick={() => {
+            setFilters({dateFrom: '', dateTo: '', symbol: '', direction: '', search: ''});
+            setPage(1);
+          }}
+          className="px-4 py-2 border border-sidebar-border bg-[#1e1e1e] hover:bg-[#2e2e2e] text-white rounded-lg text-sm transition-colors whitespace-nowrap"
+        >
+          Clear Filters
+        </button>
+      </div>
+
+      {/* ─── TRADE TABLE ─── */}
+      <div className="border border-sidebar-border bg-sidebar rounded-2xl flex flex-col flex-1 min-h-[400px]">
+        {loading && trades.length === 0 ? (
+          <div className="p-20 flex flex-col items-center justify-center flex-1">
+            <RefreshCw className="w-8 h-8 text-sidebar-primary animate-spin opacity-50 mb-4" />
+            <p className="text-muted-foreground animate-pulse">Loading trade history...</p>
+          </div>
+        ) : trades.length === 0 ? (
+          <div className="p-20 flex flex-col items-center justify-center flex-1">
+            <div className="w-16 h-16 rounded-full bg-sidebar-accent/10 flex items-center justify-center mb-4">
+              <AlertCircle className="w-8 h-8 text-muted-foreground" />
+            </div>
+            <h3 className="text-lg font-bold text-white mb-1">No Trades Found</h3>
+            <p className="text-muted-foreground text-sm max-w-sm text-center">Try adjusting your filters or date range to view historical trades.</p>
+          </div>
+        ) : (
+          <div className="overflow-x-auto w-full">
+            <table className="w-full text-left whitespace-nowrap">
+              <thead>
+                <tr className="bg-sidebar-accent/10 border-b border-sidebar-border/50 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                  <Th label="Date/Time" sortKey="entry_time" currentSort={sortConfig} onSort={handleSort} />
+                  <Th label="Symbol" sortKey="symbol" currentSort={sortConfig} onSort={handleSort} />
+                  <Th label="Type" sortKey="direction" currentSort={sortConfig} onSort={handleSort} />
+                  <Th label="Qty" sortKey="quantity" currentSort={sortConfig} onSort={handleSort} />
+                  <Th label="Entry" />
+                  <Th label="Exit" />
+                  <Th label="P&L" sortKey="pnl" currentSort={sortConfig} onSort={handleSort} />
+                  <Th label="Hold Time" sortKey="holding_time" currentSort={sortConfig} onSort={handleSort} />
+                  <Th label="Exit Reason" />
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-sidebar-border/30">
+                {trades.map((t) => (
+                  <tr key={t.id} className="hover:bg-sidebar-accent/5 transition-colors group">
+                    <td className="px-6 py-4">
+                      <div className="flex flex-col">
+                        <span className="text-sm font-medium text-white">{t.entry_time?.split(' ')[0]}</span>
+                        <span className="text-xs text-muted-foreground">{t.entry_time?.split(' ')[1]}</span>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-full bg-sidebar-primary/10 flex items-center justify-center text-[10px] font-bold text-sidebar-primary border border-sidebar-primary/20">
+                          {t.symbol.substring(0, 2)}
+                        </div>
+                        <div>
+                          <p className="font-bold text-white text-sm">{t.symbol}</p>
+                          <p className="text-[10px] text-muted-foreground uppercase">{t.sector}</p>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4">
+                      <span className={`px-2 py-0.5 rounded text-xs font-bold ${t.direction === 'BUY' ? 'bg-green-500/10 text-green-500' : 'bg-red-500/10 text-red-500'}`}>
+                        {t.direction}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 font-mono text-sm text-muted-foreground">{t.quantity}</td>
+                    <td className="px-6 py-4 font-mono text-sm text-white">₹{t.entry_price}</td>
+                    <td className="px-6 py-4 font-mono text-sm text-white">₹{t.exit_price}</td>
+                    <td className="px-6 py-4">
+                      <div className="flex items-center gap-1.5">
+                        {t.is_win ? <TrendingUp size={14} className="text-green-500" /> : <TrendingDown size={14} className="text-red-500" />}
+                        <span className={`font-mono text-sm font-bold ${t.is_win ? 'text-green-500' : 'text-red-500'}`}>
+                          {t.is_win ? '+' : ''}₹{t.pnl}
+                        </span>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 text-sm text-muted-foreground flex items-center gap-1.5 mt-2">
+                       <Clock size={12} /> {t.holding_time > 60 ? `${(t.holding_time / 60).toFixed(1)}h` : `${t.holding_time}m`}
+                    </td>
+                    <td className="px-6 py-4 text-xs text-muted-foreground">
+                       <span className="bg-white/5 border border-white/10 px-2 py-1 rounded">{t.exit_reason || 'Manual'}</span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+
+        {/* ─── PAGINATION ─── */}
+        {!loading && total > 0 && (
+          <div className="p-4 border-t border-sidebar-border/50 flex items-center justify-between text-sm">
+            <div className="text-muted-foreground">
+              Showing <span className="text-white font-medium">{(page - 1) * limit + 1}</span> to <span className="text-white font-medium">{Math.min(page * limit, total)}</span> of <span className="text-white font-medium">{total}</span> trades
+            </div>
+            
+            <div className="flex items-center gap-2">
+              <button 
+                onClick={() => setPage(p => Math.max(1, p - 1))}
+                disabled={page === 1}
+                className="p-1.5 rounded-md hover:bg-sidebar-accent/20 text-white disabled:opacity-30 transition-colors"
+              >
+                <ChevronLeft size={18} />
+              </button>
+              <div className="flex items-center gap-1">
+                {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                  // simple pagination logic for demonstration
+                  let pNum = i + 1;
+                  if (totalPages > 5 && page > 3) pNum = page - 2 + i;
+                  if (pNum > totalPages) return null;
+                  
+                  return (
+                    <button 
+                      key={pNum}
+                      onClick={() => setPage(pNum)}
+                      className={`w-8 h-8 rounded-md flex items-center justify-center font-medium transition-colors ${page === pNum ? 'bg-sidebar-primary text-black' : 'hover:bg-sidebar-accent/20 text-muted-foreground'}`}
+                    >
+                      {pNum}
+                    </button>
+                  );
+                })}
+              </div>
+              <button 
+                onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                disabled={page === totalPages}
+                className="p-1.5 rounded-md hover:bg-sidebar-accent/20 text-white disabled:opacity-30 transition-colors"
+              >
+                <ChevronRight size={18} />
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+
     </div>
   );
-};
+}
 
-export default HistoryPage;
+
+// Optional Sortable Th
+function Th({ label, sortKey, currentSort, onSort }: { label: string, sortKey?: string, currentSort?: any, onSort?: (key: string) => void }) {
+  if (!sortKey || !onSort) {
+    return <th className="px-6 py-4">{label}</th>;
+  }
+  
+  const isSorted = currentSort?.key === sortKey;
+  const isAsc = isSorted && currentSort?.order === 'asc';
+
+  return (
+    <th 
+      className="px-6 py-4 cursor-pointer hover:bg-sidebar-accent/10 transition-colors select-none group"
+      onClick={() => onSort(sortKey)}
+    >
+      <div className="flex items-center gap-1">
+        {label}
+        <div className="flex flex-col opacity-30 group-hover:opacity-100 transition-opacity">
+           {isSorted ? (
+             isAsc ? <ChevronLeft size={10} className="rotate-90 text-sidebar-primary opacity-100" /> : <ChevronRight size={10} className="rotate-90 text-sidebar-primary opacity-100" />
+           ) : (
+             <Filter size={10} />
+           )}
+        </div>
+      </div>
+    </th>
+  );
+}
+
+
+function SummaryCard({ icon, label, value, subtitle, color = "text-white", isCurrency, isPositive }: any) {
+  return (
+    <div className="border border-sidebar-border bg-sidebar rounded-2xl p-5 relative overflow-hidden group">
+      <div className="absolute -right-4 -top-4 w-16 h-16 bg-sidebar-primary/5 rounded-full blur-2xl group-hover:bg-sidebar-primary/10 transition-colors" />
+      <div className={`w-8 h-8 rounded-xl bg-sidebar-accent/20 flex items-center justify-center mb-4 ${color}`}>
+        {icon}
+      </div>
+      <p className="text-xs uppercase tracking-wider text-muted-foreground font-bold mb-1">{label}</p>
+      <div className="flex items-end gap-1 mb-1">
+         {isCurrency && <span className={`text-lg font-bold font-mono ${color}`}>{isPositive ? '+' : '-'}</span>}
+         <p className={`text-3xl font-black font-mono tracking-tight ${color}`}>{value}</p>
+      </div>
+      <p className="text-xs text-muted-foreground">{subtitle}</p>
+    </div>
+  );
+}
