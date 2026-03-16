@@ -11,12 +11,12 @@ ACCESS_TOKEN_EXPIRE_MINUTES = 30
 from fastapi_mail import ConnectionConfig
 
 # Email Configuration
-MAIL_USERNAME = os.getenv("MAIL_USERNAME", "your-email@gmail.com")
-MAIL_PASSWORD = os.getenv("MAIL_PASSWORD", "your-app-password")
-MAIL_FROM = os.getenv("MAIL_FROM", "your-email@gmail.com")
-MAIL_PORT = int(os.getenv("MAIL_PORT", 587))
-MAIL_SERVER = os.getenv("MAIL_SERVER", "smtp.gmail.com")
-MAIL_FROM_NAME = os.getenv("MAIL_FROM_NAME", "TradeSim")
+MAIL_USERNAME = os.getenv("MAIL_USERNAME") or "your-email@gmail.com"
+MAIL_PASSWORD = os.getenv("MAIL_PASSWORD") or "your-app-password"
+MAIL_FROM = os.getenv("MAIL_FROM") or "your-email@gmail.com"
+MAIL_PORT = int(os.getenv("MAIL_PORT") or 587)
+MAIL_SERVER = os.getenv("MAIL_SERVER") or "smtp.gmail.com"
+MAIL_FROM_NAME = os.getenv("MAIL_FROM_NAME") or "TradeSim"
 MAIL_STARTTLS = True
 MAIL_SSL_TLS = False
 USE_CREDENTIALS = True

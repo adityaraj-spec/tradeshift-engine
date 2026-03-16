@@ -60,3 +60,4 @@ pyotp
 # === Utilities ===
 python-dotenv
 apscheduler
+greenlet
