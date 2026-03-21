@@ -16,7 +16,7 @@ interface AIAnalystProps {
   isLaymanMode: boolean;
 }
 
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+// No API_BASE needed when using proxy for relative paths
 
 const AIAnalyst: React.FC<AIAnalystProps> = ({ symbol, isLaymanMode }) => {
   const [analysis, setAnalysis] = useState<string | null>(null);
@@ -32,7 +32,7 @@ const AIAnalyst: React.FC<AIAnalystProps> = ({ symbol, isLaymanMode }) => {
     setIsAnalyzing(true);
     setAnalysis(null);
     try {
-      const response = await axios.post(`${API_BASE}/api/stock/${symbol}/analyze`);
+      const response = await axios.post(`/api/stock/${symbol}/analyze`);
       setAnalysis(response.data.analysis);
       setLaymanExplanation(null); // Reset explanation when new analysis comes
       setChatHistory([]); // Reset chat when new analysis is generated
@@ -47,7 +47,7 @@ const AIAnalyst: React.FC<AIAnalystProps> = ({ symbol, isLaymanMode }) => {
     if (!analysis) return;
     setIsSimplifying(true);
     try {
-      const response = await axios.post(`${API_BASE}/api/stock/${symbol}/explain`, {
+      const response = await axios.post(`/api/stock/${symbol}/explain`, {
         text: analysis
       });
       setLaymanExplanation(response.data.explanation);
@@ -75,7 +75,7 @@ const AIAnalyst: React.FC<AIAnalystProps> = ({ symbol, isLaymanMode }) => {
     setIsSending(true);
 
     try {
-      const response = await axios.post(`${API_BASE}/api/stock/${symbol}/chat`, {
+      const response = await axios.post(`/api/stock/${symbol}/chat`, {
         question: newMessage.content,
         history: chatHistory
       });
@@ -157,7 +157,14 @@ const AIAnalyst: React.FC<AIAnalystProps> = ({ symbol, isLaymanMode }) => {
         ) : (
           <div className="prose prose-invert max-w-none prose-sm">
             <div className="text-gray-300 leading-relaxed whitespace-pre-wrap">
-              {currentContent?.split('###').map((section, idx) => {
+              {currentContent?.includes('<!DOCTYPE html>') || currentContent?.includes('<html') || currentContent?.includes('401') ? (
+                <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-xl text-red-400 text-sm flex flex-col gap-2">
+                  <span className="font-bold flex items-center gap-2">
+                    <ShieldCheck className="w-4 h-4" /> AI Engine Unavailable
+                  </span>
+                  <span>The AI analysis engine is currently unavailable. This is usually caused by missing or invalid API keys (e.g., HuggingFace). Please check your backend configuration.</span>
+                </div>
+              ) : currentContent?.split('###').map((section, idx) => {
                 if (!section.trim()) return null;
                 const isVarsity = section.includes('VARSITY LESSON');
                 

@@ -32,7 +32,7 @@ interface Candidate {
   varsity_tip: string;
 }
 
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+// No API_BASE needed when using proxy for relative paths
 
 const ScreenerPage: React.FC = () => {
   const [candidates, setCandidates] = useState<Candidate[]>([]);
@@ -47,7 +47,7 @@ const ScreenerPage: React.FC = () => {
     const fetchCandidates = async () => {
       setIsLoading(true);
       try {
-        const response = await axios.get(`${API_BASE}/api/screener/multibagger`);
+        const response = await axios.get(`/api/screener/multibagger`);
         setCandidates(response.data.candidates);
         setFilteredCandidates(response.data.candidates);
       } catch (error) {

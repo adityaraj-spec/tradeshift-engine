@@ -15,6 +15,21 @@ export default defineConfig({
   },
   server: {
     host: '0.0.0.0',
+    proxy: {
+      '/auth': {
+        target: 'http://backend:8000',
+        changeOrigin: true,
+      },
+      '/api': {
+        target: 'http://backend:8000',
+        changeOrigin: true,
+      },
+      '/ws': {
+        target: 'http://backend:8000',
+        ws: true,
+        changeOrigin: true,
+      },
+    },
   },
 })
 

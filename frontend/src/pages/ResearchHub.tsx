@@ -3,21 +3,18 @@ import { useParams } from 'react-router-dom';
 import axios from 'axios';
 import { 
   BarChart3, 
-  Search, 
-  Info, 
+   
+   
   Brain, 
-  TrendingUp, 
-  ShieldAlert, 
+   
+   
   Layers,
   Sparkles,
-  ChevronRight,
-  ChevronDown
+  
 } from 'lucide-react';
 import RatioGrid from '../components/features/analysis/RatioGrid';
 import FinancialCharts from '../components/features/analysis/FinancialCharts';
 import AIAnalyst from '../components/features/analysis/AIAnalyst';
-
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
 const ResearchHub: React.FC = () => {
   const { symbol } = useParams<{ symbol: string }>();
@@ -29,7 +26,7 @@ const ResearchHub: React.FC = () => {
     const fetchProfile = async () => {
       setIsLoading(true);
       try {
-        const response = await axios.get(`${API_BASE}/api/stock/${symbol}/profile`);
+        const response = await axios.get(`/api/stock/${symbol}/profile`);
         setProfile(response.data);
       } catch (error) {
         console.error("Error fetching stock profile:", error);
@@ -52,7 +49,7 @@ const ResearchHub: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-[#050505] relative overflow-hidden text-gray-100 font-sans pb-12">
+    <div className="flex-1 w-full bg-[#050505] relative overflow-y-auto overflow-x-hidden text-gray-100 font-sans pb-12 custom-scrollbar">
       {/* Dynamic Background */}
       <div className="absolute top-0 inset-x-0 h-[500px] w-full bg-gradient-to-b from-primary/10 via-blue-500/5 to-transparent pointer-events-none"></div>
       <div className="absolute -top-[300px] -right-[200px] w-[600px] h-[600px] bg-primary/20 rounded-full blur-[120px] pointer-events-none"></div>

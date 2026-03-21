@@ -20,7 +20,7 @@ import TradingViewWidget from '@/components/ui/TradingViewWidget';
 import { HEATMAP_WIDGET_CONFIG, MARKET_OVERVIEW_WIDGET_CONFIG } from '@/lib/constants';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+// No API_BASE needed when using proxy for relative paths
 
 interface IndexData {
   name: string;
@@ -86,11 +86,11 @@ const MarketPage: React.FC = () => {
     setIsLoading(true);
     try {
       const [indicesRes, gainersRes, losersRes, sectorsRes, optionsRes] = await Promise.all([
-        axios.get(`${API_BASE}/api/market/indices`),
-        axios.get(`${API_BASE}/api/market/gainers`),
-        axios.get(`${API_BASE}/api/market/losers`),
-        axios.get(`${API_BASE}/api/market/sectors`).catch(() => ({ data: [] })),
-        axios.get(`${API_BASE}/api/market/options/${optionsSymbol}`).catch(() => ({ data: null }))
+        axios.get(`/api/market/indices`),
+        axios.get(`/api/market/gainers`),
+        axios.get(`/api/market/losers`),
+        axios.get(`/api/market/sectors`).catch(() => ({ data: [] })),
+        axios.get(`/api/market/options/${optionsSymbol}`).catch(() => ({ data: null }))
       ]);
       setIndices(indicesRes.data);
       setGainers(gainersRes.data);
@@ -108,7 +108,7 @@ const MarketPage: React.FC = () => {
   useEffect(() => {
     const fetchOptions = async () => {
       try {
-        const res = await axios.get(`${API_BASE}/api/market/options/${optionsSymbol}`);
+        const res = await axios.get(`/api/market/options/${optionsSymbol}`);
         setOptionsData(res.data);
       } catch (err) {
         console.error(err);

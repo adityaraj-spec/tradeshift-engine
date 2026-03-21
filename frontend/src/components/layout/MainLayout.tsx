@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { Activity } from 'lucide-react';
-import Sidebar from './Sidebar';
 type Page = 'terminal' | 'history' | 'settings';
 import Topbar from './Topbar';
+import { GlobalTicker } from '../market/GlobalTicker';
 import ChartArea from '../features/ChartArea';
 import OrderPanel from '../features/OrderPanel';
 import TradePanel from '../TradePanel/TradePanel';
@@ -12,7 +12,7 @@ import SettingsPage from '../../pages/SettingsPage';
 import { useGame } from '../../context/GameContext';
 
 const MainLayout = () => {
-  const [page, setPage] = useState<Page>('terminal');
+  const [page] = useState<Page>('terminal');
   const { speed, setSpeed, theme, placeOrder } = useGame();
   const [selectedPrice, setSelectedPrice] = useState<number | null>(null);
 
@@ -30,10 +30,11 @@ const MainLayout = () => {
         : 'bg-gradient-to-br from-slate-50 via-blue-50 to-emerald-50 text-gray-900'
       }`}>
 
-      <Sidebar />
-
       <div className="flex-1 flex flex-col min-w-0">
         <Topbar />
+        <div className="w-full bg-tv-bg-base border-b border-tv-border py-1">
+          <GlobalTicker />
+        </div>
 
         <main className="flex-1 relative flex overflow-hidden">
           {page === 'terminal' && (
