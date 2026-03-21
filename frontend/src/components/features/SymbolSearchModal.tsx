@@ -11,6 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
 import { useGame } from "../../hooks/useGame"; // Added to hook into the Game context
+import { useNavigate } from "react-router-dom";
 
 export function SymbolSearchModal({
     open,
@@ -20,6 +21,7 @@ export function SymbolSearchModal({
     onOpenChange: (open: boolean) => void;
 }) {
     const { setSymbol } = useGame();
+    const navigate = useNavigate();
     const [activeTab, setActiveTab] = React.useState("All");
 
     const TABS = ["All", "Indices", "Stocks"];
@@ -77,6 +79,7 @@ export function SymbolSearchModal({
                                 onSelect={() => {
                                     setSymbol(item.symbol, item.token);
                                     onOpenChange(false);
+                                    navigate('/');
                                 }}
                                 className="p-0"
                             >
@@ -87,12 +90,14 @@ export function SymbolSearchModal({
                                         e.stopPropagation();
                                         setSymbol(item.symbol, item.token);
                                         onOpenChange(false);
+                                        navigate('/');
                                     }}
                                     onClick={(e) => {
                                         e.preventDefault();
                                         e.stopPropagation();
                                         setSymbol(item.symbol, item.token);
                                         onOpenChange(false);
+                                        navigate('/');
                                     }}
                                 >
                                     <div className="flex items-center gap-3 overflow-hidden pointer-events-none">

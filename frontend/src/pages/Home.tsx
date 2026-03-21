@@ -8,7 +8,7 @@ import NewsPanel from '../components/features/NewsPanel';
 import TradingViewWidget from '@/components/ui/TradingViewWidget';
 import { NEWS_WIDGET_CONFIG } from '@/lib/constants';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Newspaper, BrainCircuit, Sparkles } from 'lucide-react';
+import { Sparkles } from 'lucide-react';
 import { useGame } from '../hooks/useGame';
 
 const Home = () => {
@@ -52,10 +52,10 @@ const Home = () => {
 
   const handleConfirmExit = async (type: 'MARKET' | 'LIMIT') => {
     if (!tradeToExit) return;
-    
+
     await closePosition(
-      tradeToExit.id, 
-      type, 
+      tradeToExit.id,
+      type,
       type === 'LIMIT' ? parseFloat(exitLimitPrice) : undefined
     );
     setTradeToExit(null);
@@ -69,16 +69,16 @@ const Home = () => {
   const openTradesCount = trades.filter(t => t.status === 'OPEN' || t.status === 'TRIGGERED').length;
 
   return (
-    <div className="flex flex-col h-full w-full bg-tv-bg-base text-tv-text-primary overflow-hidden font-sans">
+    <div className="flex flex-col flex-1 w-full bg-transparent text-tv-text-primary overflow-hidden font-sans border-t-3 border-tv-border">
       {/* TOP TOOLBAR */}
       <TopToolbar isNewsOpen={isNewsOpen} onToggleNews={() => setIsNewsOpen(prev => !prev)} />
 
-      <div className="flex flex-1 min-h-0 relative">
+      <div className="flex flex-1 min-h-0 relative border-t-3 border-tv-border">
         {/* LEFT TOOLBAR */}
         <LeftToolbar />
 
         {/* CENTER CHART AREA */}
-        <div className="flex-1 relative bg-tv-bg-base">
+        <div className="flex-1 relative bg-transparent border-l-3 border-tv-border">
           <ChartArea
             onPriceClick={(price) => setSelectedPrice(price)}
             onEntryLineClick={handleEntryLineClick}
@@ -88,7 +88,7 @@ const Home = () => {
           {/* EMERGENCY EXIT ALL BUTTON */}
           {openTradesCount > 0 && (
             <div className="absolute top-4 right-4 z-50">
-              <button 
+              <button
                 onClick={() => setShowExitAllConfirm(true)}
                 className="px-4 py-2 bg-[#f23645] hover:bg-[#d8303d] text-white text-[10px] font-black uppercase tracking-widest rounded-md shadow-lg transition-all active:scale-95 flex items-center gap-2 border border-white/10"
               >
@@ -124,12 +124,12 @@ const Home = () => {
 
                 <TabsContent value="live" className="flex-1 overflow-hidden mt-0">
                   <div className="h-full p-2">
-                      <TradingViewWidget 
-                        title=""
-                        scriptUrl="https://s3.tradingview.com/external-embedding/embed-widget-timeline.js"
-                        config={NEWS_WIDGET_CONFIG}
-                        height={800}
-                      />
+                    <TradingViewWidget
+                      title=""
+                      scriptUrl="https://s3.tradingview.com/external-embedding/embed-widget-timeline.js"
+                      config={NEWS_WIDGET_CONFIG}
+                      height={800}
+                    />
                   </div>
                 </TabsContent>
 
@@ -158,7 +158,7 @@ const Home = () => {
             {/* Header */}
             <div className="px-6 py-4 border-b border-white/5 flex items-center justify-between bg-white/[0.02]">
               <h3 className="font-black text-sm uppercase tracking-widest text-primary">Exit Position</h3>
-              <button 
+              <button
                 onClick={() => setTradeToExit(null)}
                 className="p-1 hover:bg-white/5 rounded-md transition-colors"
               >
@@ -183,8 +183,8 @@ const Home = () => {
 
               <div className="flex flex-col gap-3">
                 <div className="text-[10px] font-black uppercase tracking-widest opacity-30">Select Exit Strategy</div>
-                
-                <button 
+
+                <button
                   onClick={() => handleConfirmExit('MARKET')}
                   className="w-full py-4 bg-primary text-black font-black uppercase tracking-widest text-xs rounded-lg hover:brightness-110 active:scale-[0.98] transition-all flex items-center justify-center gap-2"
                 >
@@ -193,7 +193,7 @@ const Home = () => {
 
                 <div className="flex flex-col gap-2 mt-2">
                   <div className="flex items-center gap-2 flex-1">
-                    <input 
+                    <input
                       type="number"
                       step="0.05"
                       value={exitLimitPrice}
@@ -201,7 +201,7 @@ const Home = () => {
                       placeholder="Limit Price"
                       className="w-full h-12 bg-white/5 border border-white/10 rounded-lg px-4 text-sm font-black focus:outline-none focus:border-primary/50"
                     />
-                    <button 
+                    <button
                       onClick={() => handleConfirmExit('LIMIT')}
                       className="h-12 px-6 border border-primary/40 text-primary font-black uppercase tracking-widest text-xs rounded-lg hover:bg-primary/10 active:scale-[0.98] transition-all shrink-0"
                     >
@@ -227,7 +227,7 @@ const Home = () => {
               <div className="w-16 h-16 bg-[#f23645]/10 rounded-full flex items-center justify-center">
                 <X className="w-8 h-8 text-[#f23645] animate-pulse" />
               </div>
-              
+
               <div className="flex flex-col gap-2">
                 <h3 className="font-black text-xl uppercase tracking-widest text-white">Emergency Exit</h3>
                 <p className="text-sm text-white/40 font-medium leading-relaxed px-4">
@@ -236,13 +236,13 @@ const Home = () => {
               </div>
 
               <div className="flex flex-col w-full gap-3 mt-4">
-                <button 
+                <button
                   onClick={handleExitAll}
                   className="w-full py-4 bg-[#f23645] hover:bg-[#d8303d] text-white font-black uppercase tracking-widest text-sm rounded-xl transition-all active:scale-[0.98] shadow-lg shadow-[#f23645]/20"
                 >
                   Yes, Close Everything
                 </button>
-                <button 
+                <button
                   onClick={() => setShowExitAllConfirm(false)}
                   className="w-full py-4 bg-white/5 hover:bg-white/10 text-white/60 font-black uppercase tracking-widest text-xs rounded-xl transition-all"
                 >
@@ -290,17 +290,16 @@ const Home = () => {
               </div>
 
               <div className="flex flex-col gap-3">
-                <button 
+                <button
                   onClick={() => executeOrder(pendingOrder)}
-                  className={`w-full py-4 font-black uppercase tracking-widest text-sm rounded-xl transition-all active:scale-[0.98] shadow-lg ${
-                    pendingOrder.direction === 'BUY' 
-                      ? 'bg-[#089981] hover:bg-[#07856f] text-white shadow-[#089981]/20' 
+                  className={`w-full py-4 font-black uppercase tracking-widest text-sm rounded-xl transition-all active:scale-[0.98] shadow-lg ${pendingOrder.direction === 'BUY'
+                      ? 'bg-[#089981] hover:bg-[#07856f] text-white shadow-[#089981]/20'
                       : 'bg-[#f23645] hover:bg-[#d8303d] text-white shadow-[#f23645]/20'
-                  }`}
+                    }`}
                 >
                   Confirm {pendingOrder.direction}
                 </button>
-                <button 
+                <button
                   onClick={() => setPendingOrder(null)}
                   className="w-full py-4 bg-white/5 hover:bg-white/10 text-white/60 font-black uppercase tracking-widest text-xs rounded-xl transition-all"
                 >
@@ -309,8 +308,8 @@ const Home = () => {
               </div>
 
               <div className="flex items-center gap-2 justify-center mt-2">
-                <input 
-                  type="checkbox" 
+                <input
+                  type="checkbox"
                   id="dont-show-again"
                   className="w-4 h-4 rounded border-white/10 bg-white/5 text-tv-primary focus:ring-0 focus:ring-offset-0"
                   onChange={(e) => {
@@ -329,7 +328,7 @@ const Home = () => {
       )}
 
       {/* BOTTOM FOOTER */}
-      <div className="h-8 border-t border-tv-border bg-tv-bg-base flex items-center justify-between px-4 text-xs font-semibold text-tv-text-secondary select-none flex-shrink-0">
+      <div className="h-8 border-t-4 border-tv-border bg-tv-bg-base flex items-center justify-between px-4 text-xs font-semibold text-tv-text-secondary select-none flex-shrink-0">
         {/* Bottom Left: Ranges */}
         <div className="flex items-center space-x-3">
           {['1D', '5D', '1M', '3M', '6M', 'YTD', '1Y', '5Y', 'All'].map((range) => (

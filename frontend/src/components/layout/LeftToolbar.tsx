@@ -26,7 +26,7 @@ const LeftToolbar = () => {
     );
 
     return (
-        <div className="w-[52px] border-r border-tv-border bg-tv-bg-base flex flex-col items-center py-2 h-full select-none overflow-y-auto custom-scrollbar">
+        <div className="w-[52px] bg-tv-bg-base flex flex-col items-center py-2 h-full select-none overflow-y-auto custom-scrollbar">
             {TOOL_GROUPS.map((group, i) => (
                 <div key={i} className="flex flex-col w-full items-center mb-2">
                     {group.map((Icon, j) => (

@@ -30,6 +30,7 @@ const ChartArea = ({ onPriceClick, onEntryLineClick, previewPrice, positions: pr
   const previewLineRef = useRef<IPriceLine | null>(null);
   const positionLinesRef = useRef<{ id: string | number, type: 'ENTRY' | 'SL' | 'TP', line: IPriceLine }[]>([]);
   const draggingRef = useRef<{ id: string | number, type: 'SL' | 'TP', line: IPriceLine } | null>(null);
+  const isDataLoadedRef = useRef(false);
 
   // ── Initialize Chart ────────────────────────────────────────────────────
   useEffect(() => {
@@ -355,6 +356,7 @@ const ChartArea = ({ onPriceClick, onEntryLineClick, previewPrice, positions: pr
     if (historicalCandles.length === 0) {
       seriesRef.current.setData([]);
       volumeSeriesRef.current.setData([]);
+      isDataLoadedRef.current = false;
       return;
     }
     try {
@@ -385,8 +387,11 @@ const ChartArea = ({ onPriceClick, onEntryLineClick, previewPrice, positions: pr
       seriesRef.current.setData(uniqueOhlc as any);
       volumeSeriesRef.current.setData(uniqueVol as any);
 
-      // Fit the visible range to show all data
-      chartRef.current?.timeScale().fitContent();
+      // Fit the visible range to show all data only initially
+      if (!isDataLoadedRef.current) {
+         chartRef.current?.timeScale().fitContent();
+         isDataLoadedRef.current = true;
+      }
     } catch (err) {
       console.error('Chart setData error:', err);
     }
