@@ -64,69 +64,31 @@ const TOOL_SECTIONS: { tools: ToolDef[]; separator?: boolean }[] = [
   },
 ];
 
-const UTILITY_TOOLS = [
-  { icon: Magnet, title: 'Magnet Mode', action: 'magnet' },
-  { icon: Lock,   title: 'Lock Drawings', action: 'lock' },
-  { icon: Eye,    title: 'Show/Hide Drawings', action: 'visibility' },
-  { icon: Library, title: 'Template Library', action: 'library' },
-  { icon: Trash2, title: 'Clear All Drawings', action: 'clear' },
-];
+const LeftToolbar = () => {
 
-const LeftToolbar = ({ activeTool, onSelectTool, onClearAll, onToggleLibrary }: LeftToolbarProps) => {
-  const isActive = (id: DrawingToolId) => {
-    if (id === 'cursor') return activeTool === null || activeTool === 'cursor';
-    return activeTool === id;
-  };
+    const ToolButton = ({ icon: Icon, active = false }: { icon: any, active?: boolean; }) => (
+        <Button
+            variant="ghost"
+            className={`w-10 h-10 p-0 rounded-none hover:bg-tv-bg-pane 
+        ${active ? 'text-blue-500 bg-tv-bg-pane border-l-2 border-blue-500' : 'text-tv-text-secondary'}
+      `}
+        >
+            <Icon size={20} strokeWidth={1.5} />
+        </Button>
+    );
 
-  return (
-    <div className="w-[52px] border-r border-tv-border bg-tv-bg-base flex flex-col items-center py-2 h-full select-none overflow-y-auto custom-scrollbar justify-between">
-      {/* Main tools */}
-      <div className="flex flex-col w-full items-center">
-        {TOOL_SECTIONS.map((section, si) => (
-          <div key={si} className="flex flex-col w-full items-center">
-            {section.separator && <div className="h-[1px] w-6 bg-tv-border my-1.5" />}
-            {section.tools.map((tool) => (
-              <Button
-                key={tool.id ?? tool.title}
-                variant="ghost"
-                title={tool.title}
-                onClick={() => onSelectTool(tool.id)}
-                className={`w-10 h-10 p-0 rounded-none hover:bg-tv-bg-pane ${
-                  isActive(tool.id)
-                    ? 'text-blue-500 bg-tv-bg-pane border-l-2 border-blue-500'
-                    : 'text-tv-text-secondary'
-                }`}
-              >
-                <tool.icon size={20} strokeWidth={1.5} />
-              </Button>
-      ))}
-    </div>
-  ))
-}
-      </div >
-
-  {/* Utilities — bottom */ }
-  < div className = "flex flex-col w-full items-center" >
-    <div className="h-[1px] w-6 bg-tv-border my-1.5" />
-{
-  UTILITY_TOOLS.map((util) => (
-    <Button
-      key={util.action}
-      variant="ghost"
-      title={util.title}
-      onClick={() => {
-        if (util.action === 'clear') onClearAll();
-        if (util.action === 'library') onToggleLibrary();
-      }}
-      className="w-10 h-10 p-0 rounded-none hover:bg-tv-bg-pane text-tv-text-secondary"
-    >
-      <util.icon size={20} strokeWidth={1.5} />
-    </Button>
-  ))
-}
-      </div >
-    </div >
-  );
+    return (
+        <div className="w-[52px] bg-tv-bg-base flex flex-col items-center py-2 h-full select-none overflow-y-auto custom-scrollbar">
+            {TOOL_GROUPS.map((group, i) => (
+                <div key={i} className="flex flex-col w-full items-center mb-2">
+                    {group.map((Icon, j) => (
+                        <ToolButton key={j} icon={Icon} active={i === 0 && j === 0} />
+                    ))}
+                    {i < TOOL_GROUPS.length - 1 && <div className="h-[1px] w-6 bg-tv-border my-2" />}
+                </div>
+            ))}
+        </div>
+    );
 };
 
 export default LeftToolbar;

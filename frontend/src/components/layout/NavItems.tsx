@@ -1,10 +1,10 @@
 import { Link, useLocation } from 'react-router-dom';
 
 const navItems = [
-    { name: 'Dashboard', path: '/' },
+    { name: 'Trade', path: '/trade' },
     { name: 'Markets', path: '/markets' },
     { name: 'Portfolio', path: '/portfolio' },
-    { name: 'Learn', path: '/learn' },
+    { name: 'Screener', path: '/screener' },
 ];
 
 export const NavItems = () => {

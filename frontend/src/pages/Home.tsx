@@ -123,7 +123,7 @@ const Home = () => {
   const openTradesCount = trades.filter(t => t.status === 'OPEN' || t.status === 'TRIGGERED').length;
 
   return (
-    <div className="flex flex-col flex-1 min-h-0 w-full bg-tv-bg-base text-tv-text-primary overflow-hidden font-sans">
+    <div className="flex flex-col flex-1 w-full bg-transparent text-tv-text-primary overflow-hidden font-sans border-t-3 border-tv-border">
       {/* TOP TOOLBAR */}
       <TopToolbar
         isNewsOpen={isNewsOpen}
@@ -377,8 +377,8 @@ const Home = () => {
                 <button
                   onClick={() => executeOrder(pendingOrder)}
                   className={`w-full py-4 font-black uppercase tracking-widest text-sm rounded-xl transition-all active:scale-[0.98] shadow-lg ${pendingOrder.direction === 'BUY'
-                    ? 'bg-[#089981] hover:bg-[#07856f] text-white shadow-[#089981]/20'
-                    : 'bg-[#f23645] hover:bg-[#d8303d] text-white shadow-[#f23645]/20'
+                      ? 'bg-[#089981] hover:bg-[#07856f] text-white shadow-[#089981]/20'
+                      : 'bg-[#f23645] hover:bg-[#d8303d] text-white shadow-[#f23645]/20'
                     }`}
                 >
                   Confirm {pendingOrder.direction}
@@ -412,7 +412,7 @@ const Home = () => {
       )}
 
       {/* BOTTOM FOOTER */}
-      <div className="h-8 border-t border-tv-border bg-tv-bg-base flex items-center justify-between px-4 text-xs font-semibold text-tv-text-secondary select-none flex-shrink-0">
+      <div className="h-8 border-t-4 border-tv-border bg-tv-bg-base flex items-center justify-between px-4 text-xs font-semibold text-tv-text-secondary select-none flex-shrink-0">
         {/* Bottom Left: Ranges */}
         <div className="flex items-center space-x-3">
           {['1D', '5D', '1M', '3M', '6M', 'YTD', '1Y', '5Y', 'All'].map((range) => (

@@ -32,20 +32,11 @@ const TopToolbar = ({
     const navigate = useNavigate();
 
     return (
-        <div className="h-12 border-b border-tv-border bg-tv-bg-base flex items-center px-4 justify-between text-tv-text-secondary select-none">
+        <div className="h-12 bg-transparent flex items-center px-4 justify-between text-tv-text-secondary select-none">
             <SymbolSearchModal open={isSearchOpen} onOpenChange={setIsSearchOpen} />
 
             {/* LEFT CONTROLS */}
             <div className="flex items-center space-x-2 h-full">
-                {/* Profile placeholder */}
-                <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-tv-bg-pane/50 text-tv-primary">
-                    <div className="w-7 h-7 bg-blue-600 rounded-full flex items-center justify-center text-white font-bold text-xs">
-                        D
-                    </div>
-                </Button>
-
-                <Separator orientation="vertical" className="h-6 bg-tv-border" />
-
                 {/* Symbol */}
                 <Button
                     variant="ghost"
