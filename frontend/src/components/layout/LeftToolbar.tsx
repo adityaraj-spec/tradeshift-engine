@@ -1,15 +1,67 @@
-
 import {
-    Crosshair, Minus, GitBranch, Brush, Type,
-    Ruler, ZoomIn,
-    Magnet, PenTool, Lock, Eye, Trash2
+  Crosshair, Minus, TrendingUp, MoveVertical,
+  GitBranch,
+  Hash, Triangle, Waves,
+  Square, Circle, ArrowUpRight, Paintbrush, Type,
+  Ruler, ZoomIn,
+  Magnet, Lock, Eye, Trash2, Library
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import type { DrawingToolId } from '../../hooks/useDrawingTools';
 
-const TOOL_GROUPS = [
-    [Crosshair, Minus, GitBranch, Brush, Type], // Drawing & Text tools
-    [Ruler, ZoomIn],                          // Measurement & Zoom
-    [Magnet, PenTool, Lock, Eye, Trash2]      // Utilities
+interface LeftToolbarProps {
+  activeTool: DrawingToolId;
+  onSelectTool: (tool: DrawingToolId) => void;
+  onClearAll: () => void;
+  onToggleLibrary: () => void;
+}
+
+interface ToolDef {
+  id: DrawingToolId;
+  icon: any;
+  title: string;
+}
+
+const TOOL_SECTIONS: { tools: ToolDef[]; separator?: boolean }[] = [
+  {
+    tools: [
+      { id: 'cursor', icon: Crosshair, title: 'Cursor' },
+    ],
+  },
+  {
+    separator: true,
+    tools: [
+      { id: 'hline',     icon: Minus,        title: 'Horizontal Line' },
+      { id: 'vline',     icon: MoveVertical,  title: 'Vertical Line' },
+      { id: 'trendline', icon: TrendingUp,    title: 'Trend Line' },
+      { id: 'ray',       icon: GitBranch,     title: 'Ray' },
+    ],
+  },
+  {
+    separator: true,
+    tools: [
+      { id: 'fibonacci', icon: Hash,     title: 'Fibonacci Retracement' },
+      { id: 'fib_fan',   icon: Triangle, title: 'Fibonacci Fan' },
+      { id: 'fib_ext',   icon: Waves,    title: 'Fibonacci Extension' },
+    ],
+  },
+  {
+    separator: true,
+    tools: [
+      { id: 'rectangle', icon: Square,       title: 'Rectangle' },
+      { id: 'circle',    icon: Circle,       title: 'Circle / Ellipse' },
+      { id: 'arrow',     icon: ArrowUpRight,  title: 'Arrow' },
+      { id: 'brush',     icon: Paintbrush,    title: 'Brush' },
+      { id: 'text',      icon: Type,          title: 'Text Label' },
+    ],
+  },
+  {
+    separator: true,
+    tools: [
+      { id: 'ruler', icon: Ruler,  title: 'Measure / Ruler' },
+      { id: null,    icon: ZoomIn, title: 'Zoom In' },
+    ],
+  },
 ];
 
 const LeftToolbar = () => {

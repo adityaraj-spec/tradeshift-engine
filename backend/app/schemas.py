@@ -176,3 +176,44 @@ class UserSettingsUpdate(BaseModel):
     max_order_quantity: Optional[int] = None
     one_click_trading_enabled: Optional[bool] = None
     require_session_confirmation: Optional[bool] = None
+
+
+# ─── Chart Persistence Schemas ───────────────────────────────────
+
+from typing import List, Dict, Any
+
+class ChartSettings(BaseModel):
+    active_indicators: List[str]
+    indicator_settings: Dict[str, Any]
+    active_drawings: List[Dict[str, Any]]
+    tool_templates: Dict[str, Any] = {}
+
+    class Config:
+        from_attributes = True
+
+class ChartSettingsUpdate(BaseModel):
+    active_indicators: Optional[List[str]] = None
+    indicator_settings: Optional[Dict[str, Any]] = None
+    active_drawings: Optional[List[Dict[str, Any]]] = None
+    tool_templates: Optional[Dict[str, Any]] = None
+
+class DrawingTemplateBase(BaseModel):
+    id: str
+    name: str
+    category: Optional[str] = None
+    tags: List[str]
+    data: List[Dict[str, Any]]
+    thumbnail: Optional[str] = None
+    timestamp: datetime
+
+class DrawingTemplateCreate(BaseModel):
+    id: str
+    name: str
+    category: Optional[str] = None
+    tags: List[str]
+    data: List[Dict[str, Any]]
+    thumbnail: Optional[str] = None
+
+class DrawingTemplateResponse(DrawingTemplateBase):
+    class Config:
+        from_attributes = True

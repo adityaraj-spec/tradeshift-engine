@@ -18,8 +18,7 @@ export const GlobalTicker = () => {
   useEffect(() => {
     const fetchIndices = async () => {
       try {
-        const url = import.meta.env.VITE_API_URL || 'http://localhost:8000';
-        const response = await axios.get(`${url}/api/market/indices`);
+        const response = await axios.get(`/api/market/indices`);
         
         // Fetch all indices and store them (we map them manually during render)
         setLiveIndices(response.data);

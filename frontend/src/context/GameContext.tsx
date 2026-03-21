@@ -118,6 +118,29 @@ export const GameProvider: React.FC<{ children: React.ReactNode; }> = ({ childre
   const [availableDates, setAvailableDates] = useState<string[]>([]);
 
   // ── Load Available Dates & History ──────────────────────
+  // ── Load Historical Candles ──────────────────────
+  const loadHistory = useCallback(async (symbol: string, date: string) => {
+    setIsLoadingHistory(true);
+    setHistoricalCandles([]);
+    try {
+      const candles = await fetchHistoricalCandles(symbol, 500, date);
+      setHistoricalCandles(candles);
+      if (candles.length > 0) {
+        setCurrentPrice(candles[candles.length - 1].close);
+        console.log(`📊 Loaded ${candles.length} historical candles for ${symbol} on ${date}`);
+      } else {
+        toast.error(`No data available for ${symbol} on ${date}`);
+      }
+    } catch (err) {
+      console.error('Failed to load historical candles:', err);
+      toast.error(`Data is not available for ${symbol} on ${date}`);
+      setHistoricalCandles([]);
+    } finally {
+      setIsLoadingHistory(false);
+    }
+  }, []);
+
+  // ── Load Available Dates & History ──────────────────────
   const loadAvailableDatesAndHistory = useCallback(async (symbol: string, presetDate?: string) => {
     try {
       const dates = await fetchAvailableDates(symbol);
@@ -142,43 +165,24 @@ export const GameProvider: React.FC<{ children: React.ReactNode; }> = ({ childre
       console.error('Failed to fetch available dates:', err);
       toast.error(`Error loading trading dates for ${symbol}`);
     }
-  }, []);
-
-  // ── Load Historical Candles ──────────────────────
-  const loadHistory = useCallback(async (symbol: string, date: string) => {
-    setIsLoadingHistory(true);
-    setHistoricalCandles([]);
-    try {
-      const candles = await fetchHistoricalCandles(symbol, 500, date);
-      setHistoricalCandles(candles);
-      if (candles.length > 0) {
-        setCurrentPrice(candles[candles.length - 1].close);
-        console.log(`📊 Loaded ${candles.length} historical candles for ${symbol} on ${date}`);
-      } else {
-        toast.error(`No data available for ${symbol} on ${date}`);
-      }
-    } catch (err) {
-      console.error('Failed to load historical candles:', err);
-      toast.error(`Data is not available for ${symbol} on ${date}`);
-      setHistoricalCandles([]);
-    } finally {
-      setIsLoadingHistory(false);
-    }
-  }, []);
+  }, [loadHistory]);
 
   // Load on mount
   useEffect(() => {
     loadAvailableDatesAndHistory(DEFAULT_SYMBOL);
     fetchUserSettings();
-  }, []);
+  }, [loadAvailableDatesAndHistory]); // Dependency on loadAvailableDatesAndHistory
 
   const fetchUserSettings = async () => {
     try {
-      const API_BASE = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000';
-      const response = await fetch(`${API_BASE}/api/user/settings`);
+      const response = await fetch(`/api/user/settings`, {
+        credentials: 'include'
+      });
       if (response.ok) {
         const data = await response.json();
         setUserSettings(data);
+      } else {
+        throw new Error(`Failed to fetch user settings: ${response.statusText}`);
       }
     } catch (err) {
       console.error('Failed to fetch user settings:', err);
@@ -187,11 +191,11 @@ export const GameProvider: React.FC<{ children: React.ReactNode; }> = ({ childre
 
   const updateUserSettings = async (updates: any) => {
     try {
-      const API_BASE = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000';
-      const response = await fetch(`${API_BASE}/api/user/settings`, {
+      const response = await fetch(`/api/user/settings`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(updates)
+        body: JSON.stringify(updates),
+        credentials: 'include'
       });
       
       if (!response.ok) {
@@ -216,10 +220,12 @@ export const GameProvider: React.FC<{ children: React.ReactNode; }> = ({ childre
     }
 
     setSessionType('REPLAY');
-    // Clear existing chart and index data — replay starts from 9:15
+    // Clear existing chart data — replay starts from 9:15
+    // Note: Don't clear newsItems here; they accumulate from the new session
     setHistoricalCandles([]);
     setCurrentCandle(null);
     setSimulatedIndices([]);
+    setNewsItems([]);
 
     marketDataService.connect(speed, selectedSymbol, selectedDate);
 
@@ -403,6 +409,9 @@ export const GameProvider: React.FC<{ children: React.ReactNode; }> = ({ childre
     return () => {
       marketDataService.disconnect();
     };
+  // Note: `speed` is intentionally excluded from deps.
+  // Speed changes are handled by the dedicated effect below via marketDataService.setSpeed()
+  // to avoid full WebSocket reconnection (which destroys replay state, indicators, and drawings).
   }, [isPlaying, selectedSymbol, selectedDate]);
 
   // Dynamic speed changes
@@ -413,7 +422,20 @@ export const GameProvider: React.FC<{ children: React.ReactNode; }> = ({ childre
   }, [speed, isPlaying]);
 
   const togglePlay = () => setIsPlaying(prev => !prev);
-  const toggleReplay = () => setIsReplayActive(prev => !prev);
+  const toggleReplay = () => {
+    setIsReplayActive(prev => {
+      if (prev) {
+        // Turning off replay: stop playback and reload static history
+        setIsPlaying(false);
+        setSessionType('LIVE');
+        setNewsItems([]);
+        setSimulatedIndices([]);
+        // Reload the historical candles for the current symbol/date
+        loadHistory(selectedSymbol, selectedDate);
+      }
+      return !prev;
+    });
+  };
   const toggleTheme = () => setTheme(prev => (prev === 'dark' ? 'light' : 'dark'));
 
   const setSymbol = (symbol: string, _token: string) => {
@@ -450,8 +472,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode; }> = ({ childre
     simulatedTime?: string | Date
   ) => {
     try {
-      const API_BASE = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000';
-      const response = await fetch(`${API_BASE}/api/trade/`, {
+      const response = await fetch(`/api/trade/`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -465,7 +486,8 @@ export const GameProvider: React.FC<{ children: React.ReactNode; }> = ({ childre
           alert,
           session_type: sessionType,
           simulated_time: simulatedTime || (sessionType === 'REPLAY' ? currentTime : undefined)
-        })
+        }),
+        credentials: 'include'
       });
       
       if (!response.ok) {
@@ -475,7 +497,6 @@ export const GameProvider: React.FC<{ children: React.ReactNode; }> = ({ childre
       
       const result = await response.json();
       toast.success(result.message);
-      // 'trades' will be updated via the 'order_update' WebSocket message
     } catch (err: any) {
       console.error('Trading Error:', err);
       toast.error(err.message);
@@ -484,15 +505,15 @@ export const GameProvider: React.FC<{ children: React.ReactNode; }> = ({ childre
 
   const modifyOrder = async (orderId: number | string, updates: any) => {
     try {
-      const API_BASE = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000';
-      const response = await fetch(`${API_BASE}/api/trade/order/${orderId}`, {
+      const response = await fetch(`/api/trade/order/${orderId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           ...updates,
           session_type: sessionType,
           simulated_time: sessionType === 'REPLAY' ? currentTime : undefined
-        })
+        }),
+        credentials: 'include'
       });
       
       if (!response.ok) {
@@ -502,7 +523,6 @@ export const GameProvider: React.FC<{ children: React.ReactNode; }> = ({ childre
       
       const result = await response.json();
       toast.success(result.message || 'Order modified');
-      // Update will flow back via WebSocket order_update
     } catch (err: any) {
       console.error('Modify Order Error:', err);
       toast.error(err.message);
@@ -511,15 +531,15 @@ export const GameProvider: React.FC<{ children: React.ReactNode; }> = ({ childre
 
   const closePosition = async (tradeId: string | number, exitType: 'MARKET' | 'LIMIT' = 'MARKET', limitPrice?: number, simulatedTime?: string | Date) => {
     try {
-      const API_BASE = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000';
-      const response = await fetch(`${API_BASE}/api/trade/close/${tradeId}`, {
+      const response = await fetch(`/api/trade/close/${tradeId}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           exit_type: exitType,
           limit_price: limitPrice,
           simulated_time: simulatedTime || (sessionType === 'REPLAY' ? currentTime : undefined)
-        })
+        }),
+        credentials: 'include'
       });
 
       if (!response.ok) {
@@ -537,14 +557,14 @@ export const GameProvider: React.FC<{ children: React.ReactNode; }> = ({ childre
 
   const closeAllPositions = async () => {
     try {
-      const API_BASE = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000';
-      const response = await fetch(`${API_BASE}/api/trade/close-all`, {
+      const response = await fetch(`/api/trade/close-all`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           session_type: sessionType,
           simulated_time: sessionType === 'REPLAY' ? currentTime : undefined
-        })
+        }),
+        credentials: 'include'
       });
 
       if (!response.ok) {
