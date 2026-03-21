@@ -30,6 +30,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode; }> = ({ childre
     // BACKGROUND CHECK: Verify if the cookie is actually valid
     useEffect(() => {
         const verifySession = async () => {
+            // Only verify if we have a reason to believe a session exists (LocalStorage flag)
+            // This avoids the "noisy" 401 error in the console for unauthenticated users
+            if (!user) {
+                setIsLoading(false);
+                return;
+            }
+
             try {
                 const userData = await checkAuthStatus();
                 // If successful, update local state (sync)

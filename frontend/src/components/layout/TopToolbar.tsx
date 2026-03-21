@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { 
     Bell, Rewind, Settings, Maximize, Camera, Newspaper, SearchCode,
-    PlusCircle, BarChart2, LayoutTemplate, LayoutGrid 
+    PlusCircle, BarChart2, LayoutTemplate, Layers 
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -9,13 +9,24 @@ import { Separator } from '@/components/ui/separator';
 import { SymbolSearchModal } from '../features/SymbolSearchModal';
 import { useGame } from '../../hooks/useGame';
 import { toast } from 'sonner';
+import { IndicatorTemplateMenu } from '../ProChart/IndicatorTemplateMenu';
+import type { IndicatorTemplate } from '../../store/useChartObjects';
 
 interface TopToolbarProps {
     isNewsOpen?: boolean;
     onToggleNews?: () => void;
+    isObjectTreeOpen?: boolean;
+    onToggleObjectTree?: () => void;
+    onToggleIndicators?: () => void;
+    onOpenAlerts?: () => void;
+    activeIndicatorIds: string[];
+    onApplyIndicatorTemplate: (template: IndicatorTemplate) => void;
 }
 
-const TopToolbar = ({ isNewsOpen, onToggleNews }: TopToolbarProps) => {
+const TopToolbar = ({ 
+    isNewsOpen, onToggleNews, isObjectTreeOpen, onToggleObjectTree, 
+    onToggleIndicators, onOpenAlerts, activeIndicatorIds, onApplyIndicatorTemplate 
+}: TopToolbarProps) => {
     const { selectedSymbol, isReplayActive, toggleReplay } = useGame();
     const [isSearchOpen, setIsSearchOpen] = useState(false);
     const navigate = useNavigate();
@@ -66,18 +77,26 @@ const TopToolbar = ({ isNewsOpen, onToggleNews }: TopToolbarProps) => {
                 <Separator orientation="vertical" className="h-6 bg-tv-border" />
 
                 {/* Indicators */}
-                <Button variant="ghost" className="h-8 gap-2 px-2 hover:bg-tv-bg-pane/50 hover:text-blue-500 text-tv-text-primary" onClick={() => toast.info('Indicators Library opening...')}>
+                <Button variant="ghost" className="h-8 gap-2 px-2 hover:bg-tv-bg-pane/50 hover:text-blue-500 text-tv-text-primary" onClick={onToggleIndicators}>
                     <LayoutTemplate size={18} />
                     <span className="text-sm font-medium">Indicators</span>
                 </Button>
 
-                {/* Templates/Grid */}
-                <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-tv-bg-pane/50 hover:text-blue-500" onClick={() => toast.info('Layout Options...')}>
-                    <LayoutGrid size={18} />
+                {/* Templates Menu */}
+                <IndicatorTemplateMenu 
+                    activeIndicatorIds={activeIndicatorIds}
+                    onApplyTemplate={onApplyIndicatorTemplate}
+                />
+
+                <Separator orientation="vertical" className="h-6 bg-tv-border" />
+
+                {/* Object Tree */}
+                <Button variant="ghost" size="icon" className={`h-8 w-8 hover:bg-tv-bg-pane/50 hover:text-blue-500 ${isObjectTreeOpen ? 'text-blue-500 bg-tv-bg-pane/50' : ''}`} onClick={onToggleObjectTree} title="Object Tree">
+                    <Layers size={18} />
                 </Button>
 
                 {/* Alert */}
-                <Button variant="ghost" className="h-8 gap-2 px-2 hover:bg-tv-bg-pane/50 hover:text-blue-500" onClick={() => toast.success('Create Alert dialog opening...')}>
+                <Button variant="ghost" className="h-8 gap-2 px-2 hover:bg-tv-bg-pane/50 hover:text-blue-500" onClick={onOpenAlerts}>
                     <Bell size={18} />
                     <span className="text-sm">Alert</span>
                 </Button>

@@ -1,25 +1,79 @@
-import { useState } from 'react';
+import { useState, useMemo, useEffect, useCallback } from 'react';
 import { CalendarRange, X } from 'lucide-react';
 import TopToolbar from '../components/layout/TopToolbar';
-import LeftToolbar from '../components/layout/LeftToolbar';
-import ChartArea from '../components/features/ChartArea';
+import ProChart from '../components/ProChart/ProChart';
 import TradePanel from '../components/TradePanel/TradePanel';
 import NewsPanel from '../components/features/NewsPanel';
+import ObjectTreePanel from '../components/ProChart/ObjectTreePanel';
 import TradingViewWidget from '@/components/ui/TradingViewWidget';
 import { NEWS_WIDGET_CONFIG } from '@/lib/constants';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Newspaper, BrainCircuit, Sparkles } from 'lucide-react';
 import { useGame } from '../hooks/useGame';
+import type { DrawingToolId } from '../hooks/useDrawingTools';
+
+import type { IndicatorTemplate } from '../store/useChartObjects';
 
 const Home = () => {
   const [isNewsOpen, setIsNewsOpen] = useState(false);
+  const [isObjectTreeOpen, setIsObjectTreeOpen] = useState(false);
+  const [isIndicatorsOpen, setIsIndicatorsOpen] = useState(false);
+  const [isAlertsOpen, setIsAlertsOpen] = useState(false);
+  
+  // Indicator state for TopToolbar
+  const [activeIndicatorIds, setActiveIndicatorIds] = useState<string[]>([]);
+  const [onApplyIndicatorTemplate, setOnApplyIndicatorTemplate] = useState<(t: IndicatorTemplate) => void>(() => (t: IndicatorTemplate) => console.log('Apply template', t));
+
+  const handleIndicatorStateChange = useCallback((ids: string[], applyFn: (t: IndicatorTemplate) => void) => {
+    setActiveIndicatorIds(ids);
+    setOnApplyIndicatorTemplate(() => applyFn);
+  }, []);
+  
+  // Keyboard Shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.altKey && e.key === 't') {
+        setIsObjectTreeOpen(prev => !prev);
+      }
+      if (e.altKey && e.key === 'n') {
+        setIsNewsOpen(prev => !prev);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
   const [selectedPrice, setSelectedPrice] = useState<number | null>(null);
   const [tradeToExit, setTradeToExit] = useState<any | null>(null);
   const [exitLimitPrice, setExitLimitPrice] = useState<string>('');
 
-  const { placeOrder, closePosition, closeAllPositions, trades, userSettings, updateUserSettings } = useGame();
+  const { placeOrder, closePosition, closeAllPositions, trades, userSettings, updateUserSettings, historicalCandles, currentCandle } = useGame();
   const [showExitAllConfirm, setShowExitAllConfirm] = useState(false);
   const [pendingOrder, setPendingOrder] = useState<any | null>(null);
+  
+  const [activeDrawingTool, setActiveDrawingTool] = useState<DrawingToolId>(null);
+  const [isLibraryOpen, setIsLibraryOpen] = useState(false);
+
+  const mappedCandles = useMemo(() => {
+    const data = [...historicalCandles].filter(c => 'open' in c && c.open !== undefined).map(c => ({
+      time: c.time as number,
+      open: c.open,
+      high: c.high,
+      low: c.low,
+      close: c.close,
+      volume: c.volume
+    }));
+    if (currentCandle && 'open' in currentCandle && currentCandle.open !== undefined) {
+        data.push({
+          time: currentCandle.time as number,
+          open: currentCandle.open,
+          high: currentCandle.high,
+          low: currentCandle.low,
+          close: currentCandle.close,
+          volume: currentCandle.volume
+        });
+    }
+    return data;
+  }, [historicalCandles, currentCandle]);
 
   const handleExecuteOrder = (orderData: any) => {
     if (userSettings?.one_click_trading_enabled) {
@@ -71,18 +125,34 @@ const Home = () => {
   return (
     <div className="flex flex-col h-full w-full bg-tv-bg-base text-tv-text-primary overflow-hidden font-sans">
       {/* TOP TOOLBAR */}
-      <TopToolbar isNewsOpen={isNewsOpen} onToggleNews={() => setIsNewsOpen(prev => !prev)} />
+      <TopToolbar
+        isNewsOpen={isNewsOpen}
+        onToggleNews={() => setIsNewsOpen(prev => !prev)}
+        isObjectTreeOpen={isObjectTreeOpen}
+        onToggleObjectTree={() => setIsObjectTreeOpen(prev => !prev)}
+        onToggleIndicators={() => setIsIndicatorsOpen(prev => !prev)}
+        onOpenAlerts={() => setIsAlertsOpen(true)}
+        activeIndicatorIds={activeIndicatorIds}
+        onApplyIndicatorTemplate={onApplyIndicatorTemplate}
+      />
 
       <div className="flex flex-1 min-h-0 relative">
-        {/* LEFT TOOLBAR */}
-        <LeftToolbar />
-
         {/* CENTER CHART AREA */}
         <div className="flex-1 relative bg-tv-bg-base">
-          <ChartArea
+          <ProChart 
+            data={mappedCandles} 
+            activeDrawingTool={activeDrawingTool} 
+            onDrawingToolChange={setActiveDrawingTool}
+            isLibraryOpen={isLibraryOpen}
+            onToggleLibrary={() => setIsLibraryOpen(false)}
             onPriceClick={(price) => setSelectedPrice(price)}
             onEntryLineClick={handleEntryLineClick}
             previewPrice={selectedPrice}
+            isIndicatorsOpen={isIndicatorsOpen}
+            onToggleIndicators={() => setIsIndicatorsOpen(false)}
+            isAlertsOpen={isAlertsOpen}
+            onToggleAlerts={() => setIsAlertsOpen(false)}
+            onIndicatorStateChange={handleIndicatorStateChange}
           />
 
           {/* EMERGENCY EXIT ALL BUTTON */}
@@ -99,12 +169,26 @@ const Home = () => {
           )}
         </div>
 
+        {/* OBJECT TREE PANEL (Toggleable) */}
+        <div className={`fixed inset-y-0 right-0 z-[100] md:relative md:inset-auto md:z-auto transition-all duration-300 ease-in-out overflow-hidden flex-shrink-0 ${isObjectTreeOpen ? 'w-full md:w-72 border-l border-tv-border shadow-2xl' : 'w-0'}`}>
+          {isObjectTreeOpen && (
+            <ObjectTreePanel
+              isOpen={isObjectTreeOpen}
+              onClose={() => setIsObjectTreeOpen(false)}
+            />
+          )}
+        </div>
+
         {/* RIGHT NEWS PANEL (Toggleable) */}
-        {/* ... (keep existing news panel logic) ... */}
-        <div className={`transition-all duration-300 ease-in-out overflow-hidden flex-shrink-0 ${isNewsOpen ? 'w-80 border-l border-tv-border' : 'w-0'}`}>
+        <div className={`fixed inset-y-0 right-0 z-[100] md:relative md:inset-auto md:z-auto transition-all duration-300 ease-in-out overflow-hidden flex-shrink-0 ${isNewsOpen ? 'w-full md:w-80 border-l border-tv-border shadow-2xl' : 'w-0'}`}>
           {isNewsOpen && (
-            <div className="w-80 h-full flex flex-col bg-[#050505]">
-              <Tabs defaultValue="live" className="flex flex-col h-full">
+            <div className="w-full md:w-80 h-full flex flex-col bg-[#050505]">
+              <div className="md:hidden flex items-center justify-between p-4 border-b border-white/5">
+                 <h3 className="text-xs font-black uppercase">Market News</h3>
+                 <button onClick={() => setIsNewsOpen(false)}><X className="w-4 h-4" /></button>
+              </div>
+              <Tabs defaultValue="live" className="flex flex-col h-full"> 
+                {/* ... rest of the tabs ... */}
                 <div className="p-4 border-b border-white/5">
                   <TabsList className="grid w-full grid-cols-2 bg-black/40">
                     <TabsTrigger value="live" className="text-[10px] font-black uppercase tracking-widest data-[state=active]:bg-primary data-[state=active]:text-black flex items-center gap-1.5">

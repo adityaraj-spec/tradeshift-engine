@@ -16,10 +16,18 @@ import SettingsPage from './pages/SettingsPage';
 import PortfolioPage from './pages/PortfolioPage';
 import { Toaster } from 'sonner';
 
+import { useChartPersistence } from './hooks/useChartPersistence';
+
+function ChartPersistenceManager() {
+  useChartPersistence();
+  return null;
+}
+
 export default function App() {
   return (
     <BrowserRouter>
       <AuthProvider>
+        <ChartPersistenceManager />
         <GameProvider>
           <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
             <Routes>

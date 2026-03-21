@@ -3,21 +3,18 @@ import { useParams } from 'react-router-dom';
 import axios from 'axios';
 import { 
   BarChart3, 
-  Search, 
-  Info, 
+   
+   
   Brain, 
-  TrendingUp, 
-  ShieldAlert, 
+   
+   
   Layers,
   Sparkles,
-  ChevronRight,
-  ChevronDown
+  
 } from 'lucide-react';
 import RatioGrid from '../components/features/analysis/RatioGrid';
 import FinancialCharts from '../components/features/analysis/FinancialCharts';
 import AIAnalyst from '../components/features/analysis/AIAnalyst';
-
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
 const ResearchHub: React.FC = () => {
   const { symbol } = useParams<{ symbol: string }>();
@@ -29,7 +26,7 @@ const ResearchHub: React.FC = () => {
     const fetchProfile = async () => {
       setIsLoading(true);
       try {
-        const response = await axios.get(`${API_BASE}/api/stock/${symbol}/profile`);
+        const response = await axios.get(`/api/stock/${symbol}/profile`);
         setProfile(response.data);
       } catch (error) {
         console.error("Error fetching stock profile:", error);

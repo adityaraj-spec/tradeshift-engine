@@ -2,10 +2,8 @@ import type { CandleData } from '../types';
 
 type MessageHandler = (data: any) => void;
 
-const API_BASE = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000';
-
-// Derive WebSocket URL from API_BASE
-const WS_BASE = API_BASE.replace('http://', 'ws://').replace('https://', 'wss://');
+const API_BASE = ''; // Use relative paths for proxy
+const WS_BASE = (window.location.protocol === 'https:' ? 'wss://' : 'ws://') + window.location.host;
 
 export class MarketDataService {
     private ws: WebSocket | null = null;
@@ -82,7 +80,7 @@ export async function fetchHistoricalCandles(
     if (date) {
         url += `&date=${date}`;
     }
-    const res = await fetch(url);
+    const res = await fetch(url, { credentials: 'include' });
     if (!res.ok) {
         throw new Error(`Failed to fetch history for ${symbol}: ${res.statusText}`);
     }
@@ -95,7 +93,7 @@ export async function fetchHistoricalCandles(
  * Fetch the list of available dates (YYYY-MM-DD) for a specific symbol.
  */
 export async function fetchAvailableDates(symbol: string): Promise<string[]> {
-    const res = await fetch(`${API_BASE}/api/available-dates/${encodeURIComponent(symbol)}`);
+    const res = await fetch(`${API_BASE}/api/available-dates/${encodeURIComponent(symbol)}`, { credentials: 'include' });
     if (!res.ok) {
         throw new Error(`Failed to fetch available dates for ${symbol}`);
     }

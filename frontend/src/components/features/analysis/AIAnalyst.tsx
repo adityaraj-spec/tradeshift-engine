@@ -16,7 +16,7 @@ interface AIAnalystProps {
   isLaymanMode: boolean;
 }
 
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+// No API_BASE needed when using proxy for relative paths
 
 const AIAnalyst: React.FC<AIAnalystProps> = ({ symbol, isLaymanMode }) => {
   const [analysis, setAnalysis] = useState<string | null>(null);
@@ -32,7 +32,7 @@ const AIAnalyst: React.FC<AIAnalystProps> = ({ symbol, isLaymanMode }) => {
     setIsAnalyzing(true);
     setAnalysis(null);
     try {
-      const response = await axios.post(`${API_BASE}/api/stock/${symbol}/analyze`);
+      const response = await axios.post(`/api/stock/${symbol}/analyze`);
       setAnalysis(response.data.analysis);
       setLaymanExplanation(null); // Reset explanation when new analysis comes
       setChatHistory([]); // Reset chat when new analysis is generated
@@ -47,7 +47,7 @@ const AIAnalyst: React.FC<AIAnalystProps> = ({ symbol, isLaymanMode }) => {
     if (!analysis) return;
     setIsSimplifying(true);
     try {
-      const response = await axios.post(`${API_BASE}/api/stock/${symbol}/explain`, {
+      const response = await axios.post(`/api/stock/${symbol}/explain`, {
         text: analysis
       });
       setLaymanExplanation(response.data.explanation);
@@ -75,7 +75,7 @@ const AIAnalyst: React.FC<AIAnalystProps> = ({ symbol, isLaymanMode }) => {
     setIsSending(true);
 
     try {
-      const response = await axios.post(`${API_BASE}/api/stock/${symbol}/chat`, {
+      const response = await axios.post(`/api/stock/${symbol}/chat`, {
         question: newMessage.content,
         history: chatHistory
       });

@@ -18,8 +18,7 @@ export const GlobalTicker = () => {
   useEffect(() => {
     const fetchIndices = async () => {
       try {
-        const url = import.meta.env.VITE_API_URL || 'http://localhost:8000';
-        const response = await axios.get(`${url}/api/market/indices`);
+        const response = await axios.get(`/api/market/indices`);
         
         // Filter just NIFTY and SENSEX for the global header
         const core = response.data.filter((idx: any) => 

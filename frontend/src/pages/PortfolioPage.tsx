@@ -2,18 +2,17 @@ import { useState, useEffect } from 'react';
 import axios from 'axios';
 import {
   AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer,
-  PieChart, Pie, Cell, Legend,
+  PieChart, Pie, Cell, 
 } from 'recharts';
 import {
-  TrendingUp, TrendingDown, RefreshCw, Briefcase, Plus, Minus, Bell,
-  Crosshair, PieChart as PieIcon, BarChart3, Brain, AlertTriangle,
+  TrendingUp, TrendingDown, RefreshCw, Briefcase,   
+   PieChart as PieIcon, BarChart3, Brain, AlertTriangle,
   Shield, Target, Zap, Clock, Award, ArrowUpRight, ArrowDownRight,
 } from 'lucide-react';
 
 import { useGame } from '../context/GameContext';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000';
-const api = axios.create({ baseURL: API_BASE_URL, withCredentials: true });
+const api = axios.create({ baseURL: '', withCredentials: true });
 
 const TABS = [
   { id: 'holdings', label: 'Holdings', icon: Briefcase },
