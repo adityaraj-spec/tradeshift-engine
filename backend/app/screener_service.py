@@ -43,6 +43,7 @@ class ScreenerService:
                         "market_cap": getattr(c, 'market_cap', 0),
                         "pe_ratio": pe,
                         "roce": roce,
+                        "roe": getattr(c, 'roe', min(roce, 15)),
                         "revenue_growth": getattr(c, 'revenue_growth_5y', 0),
                         "conviction_score": ScreenerService._calculate_conviction(c),
                         "sector": getattr(c, 'sector', 'General'),
@@ -105,6 +106,7 @@ class ScreenerService:
                 "market_cap": 1950000,
                 "pe_ratio": 24.5,
                 "roce": 12.5,
+                "roe": 14.1,
                 "revenue_growth": 14.2,
                 "conviction_score": 88,
                 "sector": "Energy/Telecom"
@@ -115,6 +117,7 @@ class ScreenerService:
                 "market_cap": 1250000,
                 "pe_ratio": 18.2,
                 "roce": 16.8,
+                "roe": 14.5,
                 "revenue_growth": 19.5,
                 "conviction_score": 92,
                 "sector": "Banking"
@@ -125,6 +128,7 @@ class ScreenerService:
                 "market_cap": 45000,
                 "pe_ratio": 55.4,
                 "roce": 37.2,
+                "roe": 30.1,
                 "revenue_growth": 24.8,
                 "conviction_score": 95,
                 "sector": "IT/Design"
@@ -135,6 +139,7 @@ class ScreenerService:
                 "market_cap": 95000,
                 "pe_ratio": 62.1,
                 "roce": 28.5,
+                "roe": 22.4,
                 "revenue_growth": 32.1,
                 "conviction_score": 94,
                 "sector": "FMCG"
@@ -145,6 +150,7 @@ class ScreenerService:
                 "market_cap": 310000,
                 "pe_ratio": 82.5,
                 "roce": 25.1,
+                "roe": 18.6,
                 "revenue_growth": 21.4,
                 "conviction_score": 91,
                 "sector": "Consumer Durables"

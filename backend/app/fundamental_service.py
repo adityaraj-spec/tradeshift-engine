@@ -39,19 +39,29 @@ class FundamentalService:
         
         mock_fundamentals = {
             "symbol": symbol,
+            "current_price": 2854.50 if is_reliance else 1450.75,
+            "high_52w": 3024.90 if is_reliance else 1650.00,
+            "low_52w": 2220.30 if is_reliance else 980.50,
             "market_cap": 1900000.0 if is_reliance else 500000.0,
             "pe_ratio": 28.5 if is_reliance else 22.0,
+            "book_value": 1150.25 if is_reliance else 364.00,
             "pb_ratio": 2.4,
-            "dividend_yield": 0.8,
-            "roe": 12.5,
-            "roce": 14.2,
+            "dividend_yield": 0.8 if is_reliance else 1.41,
+            "roe": 12.5 if is_reliance else 14.4,
+            "roce": 14.2 if is_reliance else 7.51,
+            "face_value": 10.0 if is_reliance else 1.0,
             "debt_to_equity": 0.35,
             "revenue_growth_5y": 15.2,
             "profit_growth_5y": 18.5,
             "ebitda_margin": 18.0,
             "current_ratio": 1.2,
             "free_cash_flow": 25000.0,
-            "promoter_holding": 50.6
+            "promoter_holding": 50.6,
+            "about": f"{symbol} Limited is a leading Indian conglomerate headquartered in Mumbai. It is India's largest private sector company by market capitalization and revenue. As of 2024, {symbol} maintains a dominant market share in its primary sectors and continues to rapidly expand its digital and retail footprint across the subcontinent.",
+            "key_points": {
+                "Market Position": f"The company is highly systemically important with a massive market share in its core segment. It is a market leader in almost every category it operates in.",
+                "Revenue Mix Q3 FY26": "Core Operations: 55%\nDigital Services: 25%\nRetail/Consumer: 15%\nOthers: 5%"
+            }
         }
 
         current_year = datetime.now().year
@@ -66,10 +76,18 @@ class FundamentalService:
                 "operating_profit": round(20000 * growth_factor, 2),
                 "eps": round(45.5 * growth_factor, 2)
             })
+            
+        mock_quarterly = [
+            {"quarter": "Q3 FY26", "revenue": round(28000 * 1.15, 2), "net_profit": round(4500 * 1.15, 2)},
+            {"quarter": "Q2 FY26", "revenue": round(27500 * 1.1, 2), "net_profit": round(4200 * 1.1, 2)},
+            {"quarter": "Q1 FY26", "revenue": round(26000 * 1.05, 2), "net_profit": round(4000 * 1.05, 2)},
+            {"quarter": "Q4 FY25", "revenue": 25000.0, "net_profit": 3800.0}
+        ]
 
         return {
             "fundamentals": mock_fundamentals,
             "financials": mock_financials,
+            "quarterly_performance": mock_quarterly,
             "is_mock": True
         }
 
