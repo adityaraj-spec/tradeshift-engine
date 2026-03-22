@@ -1,14 +1,12 @@
 import { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import {
-  Calendar, Search, Download, Filter, TrendingUp, TrendingDown,
+   Search, Download, Filter, TrendingUp, TrendingDown,
   Clock, Target, RefreshCw, AlertCircle, Award, Briefcase, FileText, ChevronLeft, ChevronRight
 } from 'lucide-react';
-import { format } from 'date-fns';
 import { useGame } from '../context/GameContext';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000';
-const api = axios.create({ baseURL: API_BASE_URL, withCredentials: true });
+const api = axios.create({ baseURL: '', withCredentials: true });
 
 export default function HistoryPage() {
   const [trades, setTrades] = useState<any[]>([]);
@@ -100,7 +98,7 @@ export default function HistoryPage() {
     if (filters.search) params.append('search', filters.search);
     params.append('session_type', sessionType);
     
-    window.location.href = `${API_BASE_URL}/api/history/trades/export?${params.toString()}`;
+    window.location.href = `/api/history/trades/export?${params.toString()}`;
   };
 
   const currentMonthSummary = summary.length > 0 ? summary[0] : null;

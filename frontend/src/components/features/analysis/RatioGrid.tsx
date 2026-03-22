@@ -1,13 +1,11 @@
 import React from 'react';
-import { 
-  TrendingUp, 
-  Wind, 
-  Percent, 
-  Coins, 
-  ArrowDownCircle, 
-  BarChart, 
-  Scale, 
-  ShieldCheck 
+import {
+  TrendingUp,
+  Wind,
+  Coins,
+  ArrowDownCircle,
+  Scale,
+  ShieldCheck
 } from 'lucide-react';
 
 interface RatioGridProps {

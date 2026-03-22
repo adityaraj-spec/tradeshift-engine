@@ -1,12 +1,11 @@
 import axios from 'axios';
 
-const API_BASE = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000';
-const API_URL = `${API_BASE}/auth`;
+const API_URL = '/auth';
 
 // Create axios instance with credentials support (Cookies)
 const api = axios.create({
     baseURL: API_URL,
-    withCredentials: true, // IMPORTANT: Sends HttpOnly Cookies
+    withCredentials: true, // Sends HttpOnly Cookies
 });
 
 export const register = async (userData: any) => {

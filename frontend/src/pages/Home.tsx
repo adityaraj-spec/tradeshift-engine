@@ -1,25 +1,79 @@
-import { useState } from 'react';
+import { useState, useMemo, useEffect, useCallback } from 'react';
 import { CalendarRange, X } from 'lucide-react';
 import TopToolbar from '../components/layout/TopToolbar';
-import LeftToolbar from '../components/layout/LeftToolbar';
-import ChartArea from '../components/features/ChartArea';
+import ProChart from '../components/ProChart/ProChart';
 import TradePanel from '../components/TradePanel/TradePanel';
 import NewsPanel from '../components/features/NewsPanel';
+import ObjectTreePanel from '../components/ProChart/ObjectTreePanel';
 import TradingViewWidget from '@/components/ui/TradingViewWidget';
 import { NEWS_WIDGET_CONFIG } from '@/lib/constants';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Newspaper, BrainCircuit, Sparkles } from 'lucide-react';
+import { Sparkles } from 'lucide-react';
 import { useGame } from '../hooks/useGame';
+import type { DrawingToolId } from '../hooks/useDrawingTools';
+
+import type { IndicatorTemplate } from '../store/useChartObjects';
 
 const Home = () => {
   const [isNewsOpen, setIsNewsOpen] = useState(false);
+  const [isObjectTreeOpen, setIsObjectTreeOpen] = useState(false);
+  const [isIndicatorsOpen, setIsIndicatorsOpen] = useState(false);
+  const [isAlertsOpen, setIsAlertsOpen] = useState(false);
+
+  // Indicator state for TopToolbar
+  const [activeIndicatorIds, setActiveIndicatorIds] = useState<string[]>([]);
+  const [onApplyIndicatorTemplate, setOnApplyIndicatorTemplate] = useState<(t: IndicatorTemplate) => void>(() => (t: IndicatorTemplate) => console.log('Apply template', t));
+
+  const handleIndicatorStateChange = useCallback((ids: string[], applyFn: (t: IndicatorTemplate) => void) => {
+    setActiveIndicatorIds(ids);
+    setOnApplyIndicatorTemplate(() => applyFn);
+  }, []);
+
+  // Keyboard Shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.altKey && e.key === 't') {
+        setIsObjectTreeOpen(prev => !prev);
+      }
+      if (e.altKey && e.key === 'n') {
+        setIsNewsOpen(prev => !prev);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
   const [selectedPrice, setSelectedPrice] = useState<number | null>(null);
   const [tradeToExit, setTradeToExit] = useState<any | null>(null);
   const [exitLimitPrice, setExitLimitPrice] = useState<string>('');
 
-  const { placeOrder, closePosition, closeAllPositions, trades, userSettings, updateUserSettings } = useGame();
+  const { placeOrder, closePosition, closeAllPositions, trades, userSettings, updateUserSettings, historicalCandles, currentCandle } = useGame();
   const [showExitAllConfirm, setShowExitAllConfirm] = useState(false);
   const [pendingOrder, setPendingOrder] = useState<any | null>(null);
+
+  const [activeDrawingTool, setActiveDrawingTool] = useState<DrawingToolId>(null);
+  const [isLibraryOpen, setIsLibraryOpen] = useState(false);
+
+  const mappedCandles = useMemo(() => {
+    const data = [...historicalCandles].filter(c => 'open' in c && c.open !== undefined).map(c => ({
+      time: c.time as number,
+      open: c.open,
+      high: c.high,
+      low: c.low,
+      close: c.close,
+      volume: c.volume
+    }));
+    if (currentCandle && 'open' in currentCandle && currentCandle.open !== undefined) {
+      data.push({
+        time: currentCandle.time as number,
+        open: currentCandle.open,
+        high: currentCandle.high,
+        low: currentCandle.low,
+        close: currentCandle.close,
+        volume: currentCandle.volume
+      });
+    }
+    return data;
+  }, [historicalCandles, currentCandle]);
 
   const handleExecuteOrder = (orderData: any) => {
     if (userSettings?.one_click_trading_enabled) {
@@ -52,10 +106,10 @@ const Home = () => {
 
   const handleConfirmExit = async (type: 'MARKET' | 'LIMIT') => {
     if (!tradeToExit) return;
-    
+
     await closePosition(
-      tradeToExit.id, 
-      type, 
+      tradeToExit.id,
+      type,
       type === 'LIMIT' ? parseFloat(exitLimitPrice) : undefined
     );
     setTradeToExit(null);
@@ -69,26 +123,42 @@ const Home = () => {
   const openTradesCount = trades.filter(t => t.status === 'OPEN' || t.status === 'TRIGGERED').length;
 
   return (
-    <div className="flex flex-col h-full w-full bg-tv-bg-base text-tv-text-primary overflow-hidden font-sans">
+    <div className="flex flex-col flex-1 min-h-0 w-full bg-transparent text-tv-text-primary overflow-hidden font-sans border-t-3 border-tv-border">
       {/* TOP TOOLBAR */}
-      <TopToolbar isNewsOpen={isNewsOpen} onToggleNews={() => setIsNewsOpen(prev => !prev)} />
+      <TopToolbar
+        isNewsOpen={isNewsOpen}
+        onToggleNews={() => setIsNewsOpen(prev => !prev)}
+        isObjectTreeOpen={isObjectTreeOpen}
+        onToggleObjectTree={() => setIsObjectTreeOpen(prev => !prev)}
+        onToggleIndicators={() => setIsIndicatorsOpen(prev => !prev)}
+        onOpenAlerts={() => setIsAlertsOpen(true)}
+        activeIndicatorIds={activeIndicatorIds}
+        onApplyIndicatorTemplate={onApplyIndicatorTemplate}
+      />
 
       <div className="flex flex-1 min-h-0 relative">
-        {/* LEFT TOOLBAR */}
-        <LeftToolbar />
-
         {/* CENTER CHART AREA */}
-        <div className="flex-1 relative bg-tv-bg-base">
-          <ChartArea
+        <div className="flex-1 relative bg-transparent">
+          <ProChart
+            data={mappedCandles}
+            activeDrawingTool={activeDrawingTool}
+            onDrawingToolChange={setActiveDrawingTool}
+            isLibraryOpen={isLibraryOpen}
+            onToggleLibrary={() => setIsLibraryOpen(false)}
             onPriceClick={(price) => setSelectedPrice(price)}
             onEntryLineClick={handleEntryLineClick}
             previewPrice={selectedPrice}
+            isIndicatorsOpen={isIndicatorsOpen}
+            onToggleIndicators={() => setIsIndicatorsOpen(false)}
+            isAlertsOpen={isAlertsOpen}
+            onToggleAlerts={() => setIsAlertsOpen(false)}
+            onIndicatorStateChange={handleIndicatorStateChange}
           />
 
           {/* EMERGENCY EXIT ALL BUTTON */}
           {openTradesCount > 0 && (
             <div className="absolute top-4 right-4 z-50">
-              <button 
+              <button
                 onClick={() => setShowExitAllConfirm(true)}
                 className="px-4 py-2 bg-[#f23645] hover:bg-[#d8303d] text-white text-[10px] font-black uppercase tracking-widest rounded-md shadow-lg transition-all active:scale-95 flex items-center gap-2 border border-white/10"
               >
@@ -99,12 +169,26 @@ const Home = () => {
           )}
         </div>
 
+        {/* OBJECT TREE PANEL (Toggleable) */}
+        <div className={`fixed inset-y-0 right-0 z-[100] md:relative md:inset-auto md:z-auto transition-all duration-300 ease-in-out overflow-hidden flex-shrink-0 ${isObjectTreeOpen ? 'w-full md:w-72 border-l border-tv-border shadow-2xl' : 'w-0'}`}>
+          {isObjectTreeOpen && (
+            <ObjectTreePanel
+              isOpen={isObjectTreeOpen}
+              onClose={() => setIsObjectTreeOpen(false)}
+            />
+          )}
+        </div>
+
         {/* RIGHT NEWS PANEL (Toggleable) */}
-        {/* ... (keep existing news panel logic) ... */}
-        <div className={`transition-all duration-300 ease-in-out overflow-hidden flex-shrink-0 ${isNewsOpen ? 'w-80 border-l border-tv-border' : 'w-0'}`}>
+        <div className={`fixed inset-y-0 right-0 z-[100] md:relative md:inset-auto md:z-auto transition-all duration-300 ease-in-out overflow-hidden flex-shrink-0 ${isNewsOpen ? 'w-full md:w-80 border-l border-tv-border shadow-2xl' : 'w-0'}`}>
           {isNewsOpen && (
-            <div className="w-80 h-full flex flex-col bg-[#050505]">
+            <div className="w-full md:w-80 h-full flex flex-col bg-[#050505]">
+              <div className="md:hidden flex items-center justify-between p-4 border-b border-white/5">
+                <h3 className="text-xs font-black uppercase">Market News</h3>
+                <button onClick={() => setIsNewsOpen(false)}><X className="w-4 h-4" /></button>
+              </div>
               <Tabs defaultValue="live" className="flex flex-col h-full">
+                {/* ... rest of the tabs ... */}
                 <div className="p-4 border-b border-white/5">
                   <TabsList className="grid w-full grid-cols-2 bg-black/40">
                     <TabsTrigger value="live" className="text-[10px] font-black uppercase tracking-widest data-[state=active]:bg-primary data-[state=active]:text-black flex items-center gap-1.5">
@@ -124,12 +208,12 @@ const Home = () => {
 
                 <TabsContent value="live" className="flex-1 overflow-hidden mt-0">
                   <div className="h-full p-2">
-                      <TradingViewWidget 
-                        title=""
-                        scriptUrl="https://s3.tradingview.com/external-embedding/embed-widget-timeline.js"
-                        config={NEWS_WIDGET_CONFIG}
-                        height={800}
-                      />
+                    <TradingViewWidget
+                      title=""
+                      scriptUrl="https://s3.tradingview.com/external-embedding/embed-widget-timeline.js"
+                      config={NEWS_WIDGET_CONFIG}
+                      height={800}
+                    />
                   </div>
                 </TabsContent>
 
@@ -158,7 +242,7 @@ const Home = () => {
             {/* Header */}
             <div className="px-6 py-4 border-b border-white/5 flex items-center justify-between bg-white/[0.02]">
               <h3 className="font-black text-sm uppercase tracking-widest text-primary">Exit Position</h3>
-              <button 
+              <button
                 onClick={() => setTradeToExit(null)}
                 className="p-1 hover:bg-white/5 rounded-md transition-colors"
               >
@@ -183,8 +267,8 @@ const Home = () => {
 
               <div className="flex flex-col gap-3">
                 <div className="text-[10px] font-black uppercase tracking-widest opacity-30">Select Exit Strategy</div>
-                
-                <button 
+
+                <button
                   onClick={() => handleConfirmExit('MARKET')}
                   className="w-full py-4 bg-primary text-black font-black uppercase tracking-widest text-xs rounded-lg hover:brightness-110 active:scale-[0.98] transition-all flex items-center justify-center gap-2"
                 >
@@ -193,7 +277,7 @@ const Home = () => {
 
                 <div className="flex flex-col gap-2 mt-2">
                   <div className="flex items-center gap-2 flex-1">
-                    <input 
+                    <input
                       type="number"
                       step="0.05"
                       value={exitLimitPrice}
@@ -201,7 +285,7 @@ const Home = () => {
                       placeholder="Limit Price"
                       className="w-full h-12 bg-white/5 border border-white/10 rounded-lg px-4 text-sm font-black focus:outline-none focus:border-primary/50"
                     />
-                    <button 
+                    <button
                       onClick={() => handleConfirmExit('LIMIT')}
                       className="h-12 px-6 border border-primary/40 text-primary font-black uppercase tracking-widest text-xs rounded-lg hover:bg-primary/10 active:scale-[0.98] transition-all shrink-0"
                     >
@@ -227,7 +311,7 @@ const Home = () => {
               <div className="w-16 h-16 bg-[#f23645]/10 rounded-full flex items-center justify-center">
                 <X className="w-8 h-8 text-[#f23645] animate-pulse" />
               </div>
-              
+
               <div className="flex flex-col gap-2">
                 <h3 className="font-black text-xl uppercase tracking-widest text-white">Emergency Exit</h3>
                 <p className="text-sm text-white/40 font-medium leading-relaxed px-4">
@@ -236,13 +320,13 @@ const Home = () => {
               </div>
 
               <div className="flex flex-col w-full gap-3 mt-4">
-                <button 
+                <button
                   onClick={handleExitAll}
                   className="w-full py-4 bg-[#f23645] hover:bg-[#d8303d] text-white font-black uppercase tracking-widest text-sm rounded-xl transition-all active:scale-[0.98] shadow-lg shadow-[#f23645]/20"
                 >
                   Yes, Close Everything
                 </button>
-                <button 
+                <button
                   onClick={() => setShowExitAllConfirm(false)}
                   className="w-full py-4 bg-white/5 hover:bg-white/10 text-white/60 font-black uppercase tracking-widest text-xs rounded-xl transition-all"
                 >
@@ -290,17 +374,16 @@ const Home = () => {
               </div>
 
               <div className="flex flex-col gap-3">
-                <button 
+                <button
                   onClick={() => executeOrder(pendingOrder)}
-                  className={`w-full py-4 font-black uppercase tracking-widest text-sm rounded-xl transition-all active:scale-[0.98] shadow-lg ${
-                    pendingOrder.direction === 'BUY' 
-                      ? 'bg-[#089981] hover:bg-[#07856f] text-white shadow-[#089981]/20' 
+                  className={`w-full py-4 font-black uppercase tracking-widest text-sm rounded-xl transition-all active:scale-[0.98] shadow-lg ${pendingOrder.direction === 'BUY'
+                      ? 'bg-[#089981] hover:bg-[#07856f] text-white shadow-[#089981]/20'
                       : 'bg-[#f23645] hover:bg-[#d8303d] text-white shadow-[#f23645]/20'
-                  }`}
+                    }`}
                 >
                   Confirm {pendingOrder.direction}
                 </button>
-                <button 
+                <button
                   onClick={() => setPendingOrder(null)}
                   className="w-full py-4 bg-white/5 hover:bg-white/10 text-white/60 font-black uppercase tracking-widest text-xs rounded-xl transition-all"
                 >
@@ -309,8 +392,8 @@ const Home = () => {
               </div>
 
               <div className="flex items-center gap-2 justify-center mt-2">
-                <input 
-                  type="checkbox" 
+                <input
+                  type="checkbox"
                   id="dont-show-again"
                   className="w-4 h-4 rounded border-white/10 bg-white/5 text-tv-primary focus:ring-0 focus:ring-offset-0"
                   onChange={(e) => {
@@ -329,7 +412,7 @@ const Home = () => {
       )}
 
       {/* BOTTOM FOOTER */}
-      <div className="h-8 border-t border-tv-border bg-tv-bg-base flex items-center justify-between px-4 text-xs font-semibold text-tv-text-secondary select-none flex-shrink-0">
+      <div className="h-8 border-t-4 border-tv-border bg-tv-bg-base flex items-center justify-between px-4 text-xs font-semibold text-tv-text-secondary select-none flex-shrink-0">
         {/* Bottom Left: Ranges */}
         <div className="flex items-center space-x-3">
           {['1D', '5D', '1M', '3M', '6M', 'YTD', '1Y', '5Y', 'All'].map((range) => (

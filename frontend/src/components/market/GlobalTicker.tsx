@@ -1,7 +1,7 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, Fragment } from 'react';
 import axios from 'axios';
-import { ArrowUpRight, ArrowDownRight, Clock } from 'lucide-react';
 import { useGame } from '../../hooks/useGame';
+import { Separator } from '@/components/ui/separator';
 
 export interface IndexData {
   name: string;
@@ -13,19 +13,15 @@ export interface IndexData {
 
 export const GlobalTicker = () => {
   const [liveIndices, setLiveIndices] = useState<IndexData[]>([]);
-  const { isPlaying, simulatedIndices } = useGame();
+  const { isPlaying, simulatedIndices, setSymbol } = useGame();
 
   useEffect(() => {
     const fetchIndices = async () => {
       try {
-        const url = import.meta.env.VITE_API_URL || 'http://localhost:8000';
-        const response = await axios.get(`${url}/api/market/indices`);
+        const response = await axios.get(`/api/market/indices`);
         
-        // Filter just NIFTY and SENSEX for the global header
-        const core = response.data.filter((idx: any) => 
-          idx.name === 'NIFTY 50' || idx.name === 'SENSEX'
-        );
-        setLiveIndices(core);
+        // Fetch all indices and store them (we map them manually during render)
+        setLiveIndices(response.data);
       } catch (err) {
         console.error('Failed to fetch ticker data', err);
       }
@@ -36,33 +32,68 @@ export const GlobalTicker = () => {
     return () => clearInterval(interval);
   }, []);
 
-  // Decide which data source to render
-  const displayIndices = isPlaying 
-      ? simulatedIndices.filter((idx) => idx.name === 'NIFTY 50' || idx.name === 'SENSEX')
-      : liveIndices;
+  // Decide which data source to render and map exactly to the 5 requested symbols
+  const sourceData = isPlaying ? simulatedIndices : liveIndices;
+  const targetSymbols = [
+    { searchName: 'NIFTY', displayName: 'NIFTY', exactMatches: ['NIFTY', 'NIFTY 50'] },
+    { searchName: 'BANKNIFTY', displayName: 'BANKNIFTY', exactMatches: ['BANKNIFTY'] },
+    { searchName: 'SENSEX', displayName: 'SENSEX', exactMatches: ['SENSEX', 'BSE SENSEX'] },
+    { searchName: 'HDFCBANK', displayName: 'HDFCBANK', exactMatches: ['HDFCBANK'] },
+    { searchName: 'RELIANCE', displayName: 'RELIANCE', exactMatches: ['RELIANCE'] }
+  ];
 
-  if (displayIndices.length === 0) return null;
+  const displayIndices: IndexData[] = targetSymbols.map(target => {
+    const found = sourceData.find(idx => 
+      target.exactMatches.includes(idx.name?.toUpperCase()) ||
+      target.exactMatches.includes((idx as any).symbol?.toUpperCase())
+    );
+
+    if (found) return found;
+
+    // Fallback if not loaded/found from API
+    return {
+      name: target.displayName,
+      price: 0,
+      change: 0,
+      change_percent: 0,
+      is_positive: true
+    };
+  });
 
   return (
-    <div className={`hidden lg:flex items-center gap-6 px-4 py-1.5 rounded-full border shadow-inner ml-4 backdrop-blur-sm transition-colors duration-300 ${isPlaying ? 'bg-indigo-500/10 border-indigo-500/30' : 'bg-tv-bg-base/60 border-tv-border/50'}`}>
+    <div className="flex items-center gap-4 px-4 overflow-x-auto whitespace-nowrap hide-scrollbar text-[13px] font-sans">
       
       {isPlaying && (
-        <div className="flex items-center text-xs font-bold text-indigo-400 gap-1.5 animate-pulse mr-2">
-            <Clock size={14} />
-            <span>SIM SYNC</span>
-        </div>
+        <>
+          <div className="flex items-center text-xs font-bold text-indigo-400 gap-1.5 animate-pulse shrink-0">
+              <span>SIM SYNC</span>
+          </div>
+          <Separator orientation="vertical" className="h-4 w-[3px] bg-tv-border/40 mx-2" />
+        </>
       )}
 
-      {displayIndices.map(idx => (
-        <div key={idx.name} className="flex items-center gap-2 text-sm font-mono tracking-tight">
-          <span className="text-tv-text-secondary font-sans font-medium text-xs uppercase">{idx.name}</span>
-          <span className="text-tv-text-primary font-semibold">{idx.price.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
-          <span className={`flex items-center text-xs font-medium ${idx.is_positive ? 'text-green-500' : 'text-red-500'}`}>
-            {idx.is_positive ? <ArrowUpRight size={14} className="mr-0.5" /> : <ArrowDownRight size={14} className="mr-0.5" />}
-            {Math.abs(idx.change_percent).toFixed(2)}%
-          </span>
-        </div>
-      ))}
+      {displayIndices.map((idx, i) => {
+        const isPos = idx.is_positive ?? idx.change >= 0;
+        const colorClass = isPos ? 'text-[#089981]' : 'text-[#f23645]';
+        const sign = isPos ? '+' : '';
+        return (
+          <Fragment key={idx.name + i}>
+            <div 
+              className="flex items-center gap-2 shrink-0 cursor-pointer hover:bg-slate-100 dark:hover:bg-white/5 px-2 py-1 rounded transition-colors"
+              onClick={() => setSymbol(idx.name, '')}
+            >
+              <span className="text-tv-text-primary font-bold uppercase tracking-wide">{idx.name}</span>
+              <span className="text-tv-text-primary font-medium">{idx.price.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
+              <span className={colorClass}>
+                {idx.change.toFixed(2)} ({sign}{idx.change_percent.toFixed(2)}%)
+              </span>
+            </div>
+            {i < displayIndices.length - 1 && (
+              <Separator orientation="vertical" className="h-4 w-[3px] bg-tv-border/40 mx-2" />
+            )}
+          </Fragment>
+        );
+      })}
     </div>
   );
 };

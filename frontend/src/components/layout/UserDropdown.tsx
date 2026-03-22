@@ -1,10 +1,12 @@
 import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { User, LogOut, Settings, UserCircle } from 'lucide-react';
+import { User, LogOut, UserCircle, Wallet, History, Sliders } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+import { useGame } from '../../hooks/useGame';
 
 export const UserDropdown = () => {
     const { isAuthenticated, user, logout } = useAuth();
+    const { balance } = useGame();
     const [isOpen, setIsOpen] = useState(false);
     const dropdownRef = useRef<HTMLDivElement>(null);
     const navigate = useNavigate();
@@ -65,6 +67,16 @@ export const UserDropdown = () => {
                             <p className="text-xs text-tv-text-secondary truncate">{user?.email || 'user@example.com'}</p>
                         </div>
 
+                        <div className="px-4 py-2 border-b border-tv-border mb-1">
+                            <span className="text-[10px] uppercase font-bold tracking-wider text-tv-text-secondary">Total Virtual Money</span>
+                            <div className="flex items-center gap-2 mt-1">
+                                <Wallet size={16} className="text-tv-primary" />
+                                <span className="font-mono font-bold text-tv-text-primary">
+                                    ₹{balance.toLocaleString('en-IN', { maximumFractionDigits: 2 })}
+                                </span>
+                            </div>
+                        </div>
+
                         <button
                             onClick={() => { setIsOpen(false); navigate('/profile'); }}
                             className="flex w-full items-center px-4 py-2 text-sm text-tv-text-secondary hover:bg-tv-bg-base hover:text-tv-text-primary transition-colors"
@@ -74,11 +86,19 @@ export const UserDropdown = () => {
                         </button>
 
                         <button
+                            onClick={() => { setIsOpen(false); navigate('/history'); }}
+                            className="flex w-full items-center px-4 py-2 text-sm text-tv-text-secondary hover:bg-tv-bg-base hover:text-tv-text-primary transition-colors"
+                        >
+                            <History size={16} className="mr-2" />
+                            History
+                        </button>
+
+                        <button
                             onClick={() => { setIsOpen(false); navigate('/settings'); }}
                             className="flex w-full items-center px-4 py-2 text-sm text-tv-text-secondary hover:bg-tv-bg-base hover:text-tv-text-primary transition-colors"
                         >
-                            <Settings size={16} className="mr-2" />
-                            Settings
+                            <Sliders size={16} className="mr-2" />
+                            Config
                         </button>
 
                         <div className="border-t border-tv-border my-1"></div>
