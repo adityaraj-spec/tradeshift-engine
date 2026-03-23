@@ -25,7 +25,7 @@ const MainLayout = () => {
     <div className={`flex h-screen w-screen font-sans overflow-hidden transition-colors duration-500
       ${theme === 'dark'
         // Dark Mode: Deep Blue -> Slate -> Dark Teal (Professional Trading Look)
-        ? 'bg-gradient-to-br from-[#0f172a] via-[#1e293b] to-[#0f2c29] text-gray-100'
+        ? 'bg-gradient-to-br from-[#0f172a] via-[#1e293b] to-[#0f2c29] text-gray-200'
         // Light Mode: White -> Subtle Blue -> Subtle Emerald
         : 'bg-gradient-to-br from-slate-50 via-blue-50 to-emerald-50 text-gray-900'
       }`}>

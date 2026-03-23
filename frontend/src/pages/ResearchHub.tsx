@@ -64,31 +64,32 @@ const ResearchHub: React.FC = () => {
   }
 
   return (
-    <div className="flex-1 w-full bg-[#050505] relative overflow-y-auto overflow-x-hidden text-gray-100 font-sans pb-12 custom-scrollbar">
+    <div className="min-h-screen dark:bg-[#050505] dark:text-gray-100 light:bg-gray-100 relative overflow-hidden font-sans pb-12">
       {/* Dynamic Background */}
       <div className="absolute top-0 inset-x-0 h-[500px] w-full bg-gradient-to-b from-primary/10 via-blue-500/5 to-transparent pointer-events-none"></div>
       <div className="absolute -top-[300px] -right-[200px] w-[600px] h-[600px] bg-primary/20 rounded-full blur-[120px] pointer-events-none"></div>
       
-      <div className="relative z-10 p-6 space-y-8 max-w-7xl mx-auto mt-4">
+      <div className="relative z-10 p-6 space-y-8 mt-4">
         {/* Header Section */}
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 bg-white/[0.02] p-8 rounded-3xl border border-white/10 shadow-[0_20px_40px_-20px_rgba(0,0,0,0.5)] backdrop-blur-md">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 bg-white dark:bg-white/[0.02] p-8 rounded-xl border border-gray-200 dark:border-white/10 shadow-sm dark:shadow-[0_20px_40px_-20px_rgba(0,0,0,0.5)] backdrop-blur-md">
           <div className="space-y-2">
           <div className="flex items-center gap-3">
-            <h1 className="text-4xl font-bold tracking-tight text-white">{symbol}</h1>
-            <span className="px-3 py-1 bg-primary/20 text-primary rounded-full text-xs font-medium border border-primary/30">
+            <h1 className="text-4xl font-bold tracking-tight text-gray-900 dark:text-white">{symbol}</h1>
+            <span className="px-3 py-1 bg-primary/10 dark:bg-primary/20 text-primary rounded-full text-xs font-medium border border-primary/20 dark:border-primary/30">
               EQUITY
             </span>
           </div>
-          <p className="text-gray-400 text-sm max-w-lg leading-relaxed">
+          <p className="text-gray-600 dark:text-gray-400 text-sm max-w-lg leading-relaxed">
             Institutional-grade deep dive and fundamental analysis powered by FinGPT. Master the mechanics behind the numbers.
           </p>
           </div>
 
-        <div className="flex items-center gap-4 p-1.5 bg-black/40 rounded-xl border border-white/10">
-          <span className={`text-xs font-medium px-3 py-1.5 rounded-lg transition-all cursor-pointer ${!isLaymanMode ? 'bg-primary text-black' : 'text-gray-400 hover:text-white'}`} onClick={() => setIsLaymanMode(false)}>
+        <div className="flex items-center gap-2 p-1.5 bg-gray-100 dark:bg-black/40 rounded-xl border border-gray-200 dark:border-white/10">
+          <span className={`text-xs font-medium px-3 py-1.5 rounded-lg transition-all cursor-pointer flex items-center gap-1.5 ${!isLaymanMode ? 'bg-green-500 text-white dark:text-black shadow-sm' : 'text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white'}`} onClick={() => setIsLaymanMode(false)}>
+            <Layers className="w-3.5 h-3.5" />
             Professional
           </span>
-          <span className={`text-xs font-medium px-3 py-1.5 rounded-lg transition-all cursor-pointer flex items-center gap-1.5 ${isLaymanMode ? 'bg-green-500 text-black' : 'text-gray-400 hover:text-white'}`} onClick={() => setIsLaymanMode(true)}>
+          <span className={`text-xs font-medium px-3 py-1.5 rounded-lg transition-all cursor-pointer flex items-center gap-1.5 ${isLaymanMode ? 'bg-green-500 text-white dark:text-black shadow-sm' : 'text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white'}`} onClick={() => setIsLaymanMode(true)}>
             <Brain className="w-3.5 h-3.5" />
             Layman Explain
           </span>
@@ -218,7 +219,7 @@ const ResearchHub: React.FC = () => {
 
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-8 mt-2">
         {/* Left Content: Fundamentals & Charts */}
-        <div className="xl:col-span-2 space-y-8">
+        <div className="xl:col-span-2 space-y-8 rounded-lg">
           {/* Key Metrics Grid */}
           <section className="space-y-4">
             <div className="flex items-center gap-2 px-1">
@@ -272,7 +273,11 @@ const ResearchHub: React.FC = () => {
               <BarChart3 className="w-5 h-5 text-primary" />
               <h2 className="text-xl font-semibold">Yearly Financial Growth</h2>
             </div>
-            <div className="bg-[#0a0a0a] p-6 rounded-2xl border border-white/5 h-[400px]">
+            <div className="bg-white dark:bg-[#0a0a0a] 
+                p-6 rounded-lg 
+                border border-gray-200 dark:border-white/5 
+                shadow-md dark:shadow-none 
+                h-[400px]">
               <FinancialCharts data={profile?.financials} />
             </div>
           </section>

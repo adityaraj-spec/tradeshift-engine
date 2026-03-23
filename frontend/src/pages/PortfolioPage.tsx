@@ -72,7 +72,7 @@ export default function PortfolioPage() {
       <div className="flex-1 p-6 flex items-center justify-center min-h-[400px]">
         <div className="text-center space-y-3">
           <RefreshCw className="w-8 h-8 animate-spin text-sidebar-primary mx-auto opacity-50" />
-          <p className="text-muted-foreground text-sm animate-pulse">Loading portfolio analytics...</p>
+          <p className="text-gray-500 dark:text-muted-foreground text-sm animate-pulse">Loading portfolio analytics...</p>
         </div>
       </div>
     );
@@ -82,28 +82,28 @@ export default function PortfolioPage() {
   const isPositive = data.is_positive;
 
   return (
-    <div className="p-6 max-w-7xl mx-auto space-y-6 w-full">
+    <div className="p-6 space-y-6 w-full">
       {/* ─── HEADER ─── */}
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight text-white flex items-center gap-3">
+          <h1 className="text-3xl font-bold tracking-tight text-gray-900 dark:text-white flex items-center gap-3">
             <Briefcase className="text-sidebar-primary" /> My Portfolio
           </h1>
-          <p className="text-muted-foreground mt-1 text-sm">Track holdings, positions, sector allocation & trade analytics.</p>
+          <p className="text-gray-500 dark:text-muted-foreground mt-1 text-sm">Track holdings, positions, sector allocation & trade analytics.</p>
         </div>
-        <button onClick={fetchAll} className="p-2 bg-sidebar border border-sidebar-border hover:bg-sidebar-accent/10 rounded-lg text-sidebar-foreground/70 hover:text-white transition-colors flex items-center gap-2">
-          <RefreshCw className="w-4 h-4" /><span className="text-sm font-medium">Refresh</span>
+        <button onClick={fetchAll} className="p-2.5 px-5 bg-gray-900 dark:bg-sidebar-primary shadow-[0_4px_10px_-3px_rgba(0,0,0,0.2)] hover:shadow-[0_6px_15px_-3px_rgba(0,0,0,0.3)] dark:shadow-none hover:bg-gray-800 dark:hover:bg-sidebar-primary/90 rounded-xl text-white dark:text-sidebar-primary-foreground transition-all duration-300 flex items-center gap-2 font-semibold">
+          <RefreshCw className="w-4 h-4" /><span className="text-sm">Refresh</span>
         </button>
       </div>
 
       {/* ─── TABS ─── */}
-      <div className="flex gap-1 p-1 bg-sidebar border border-sidebar-border rounded-xl">
+      <div className="flex gap-1.5 p-1.5 bg-gray-100/70 dark:bg-[#0a0a0a] rounded-xl shadow-sm border border-transparent dark:border-white/5">
         {TABS.map(tab => {
           const Icon = tab.icon;
           const isActive = activeTab === tab.id;
           return (
             <button key={tab.id} onClick={() => setActiveTab(tab.id)}
-              className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-lg text-sm font-medium transition-all duration-200 ${isActive ? 'bg-sidebar-primary text-black shadow-lg shadow-sidebar-primary/20' : 'text-muted-foreground hover:text-white hover:bg-sidebar-accent/10'}`}>
+              className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-lg text-sm font-semibold transition-all duration-300 ${isActive ? 'bg-white dark:bg-white/10 text-gray-900 dark:text-white shadow-sm ring-1 ring-gray-900/5 dark:ring-0' : 'text-gray-500 dark:text-muted-foreground hover:text-gray-900 dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/5'}`}>
               <Icon className="w-4 h-4" />{tab.label}
             </button>
           );
@@ -128,27 +128,27 @@ function HoldingsTab({ data, holdings, isPositive }: any) {
     <div className="space-y-6 animate-in fade-in duration-300">
       {/* Health Cards + Equity Curve */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-1 border border-sidebar-border bg-sidebar rounded-2xl p-6 relative overflow-hidden flex flex-col justify-between">
+        <div className="lg:col-span-1 group relative bg-white dark:bg-[#0a0a0a] border border-gray-200 dark:border-white/5 rounded-xl hover:border-gray-300 dark:hover:border-primary/50 transition-all duration-500 hover:shadow-xl dark:hover:shadow-[0_0_30px_-10px_rgba(59,130,246,0.3)] shadow-sm dark:shadow-none p-6 relative overflow-hidden flex flex-col justify-between">
           <div className="absolute top-0 right-0 w-32 h-32 bg-sidebar-primary/5 rounded-full blur-3xl" />
           <div className="space-y-5 z-10">
             <div>
-              <p className="text-sm font-medium text-muted-foreground mb-1">Current Value</p>
+              <p className="text-sm font-medium text-gray-500 dark:text-muted-foreground mb-1">Current Value</p>
               <h2 className={`text-4xl font-bold font-mono tracking-tight ${isPositive ? 'text-green-500' : 'text-red-500'}`}>
                 ₹{data.current_value.toLocaleString('en-IN')}
               </h2>
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <p className="text-xs uppercase tracking-wider text-muted-foreground mb-1">Total Invested</p>
-                <p className="font-mono text-lg text-white">₹{data.total_invested.toLocaleString('en-IN')}</p>
+                <p className="text-xs uppercase tracking-wider text-gray-500 dark:text-muted-foreground mb-1">Total Invested</p>
+                <p className="font-mono text-lg text-gray-900 dark:text-white">₹{data.total_invested.toLocaleString('en-IN')}</p>
               </div>
               <div>
-                <p className="text-xs uppercase tracking-wider text-muted-foreground mb-1">XIRR</p>
+                <p className="text-xs uppercase tracking-wider text-gray-500 dark:text-muted-foreground mb-1">XIRR</p>
                 <p className="font-mono text-lg text-sidebar-primary">{data.xirr_percent.toFixed(2)}%</p>
               </div>
             </div>
             <div>
-              <p className="text-xs uppercase tracking-wider text-muted-foreground mb-1">Total Returns</p>
+              <p className="text-xs uppercase tracking-wider text-gray-500 dark:text-muted-foreground mb-1">Total Returns</p>
               <div className="flex items-center gap-2 font-mono text-lg">
                 <span className={isPositive ? 'text-green-500' : 'text-red-500'}>
                   {isPositive ? '+' : '-'}₹{Math.abs(data.total_pnl).toLocaleString('en-IN')}
@@ -161,8 +161,8 @@ function HoldingsTab({ data, holdings, isPositive }: any) {
           </div>
         </div>
 
-        <div className="lg:col-span-2 border border-sidebar-border bg-sidebar rounded-2xl p-6">
-          <h3 className="text-lg font-semibold text-white mb-4">Portfolio Growth</h3>
+        <div className="lg:col-span-2 bg-white dark:bg-[#0a0a0a] border border-gray-200 dark:border-white/5 rounded-xl shadow-sm dark:shadow-none p-6">
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Portfolio Growth</h3>
           <div className="h-[250px] w-full">
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={data.equity_curve} margin={{ top: 10, right: 0, left: -20, bottom: 0 }}>
@@ -183,38 +183,38 @@ function HoldingsTab({ data, holdings, isPositive }: any) {
       </div>
 
       {/* Holdings Table */}
-      <div className="border border-sidebar-border bg-sidebar rounded-2xl overflow-hidden">
-        <div className="p-5 border-b border-sidebar-border/50 flex justify-between items-center">
-          <h3 className="text-lg font-bold text-white">Your Holdings</h3>
-          <span className="text-xs text-muted-foreground bg-sidebar-accent/10 px-3 py-1 rounded-full">{holdings.length} stocks</span>
+      <div className="bg-white dark:bg-[#0a0a0a] border border-gray-200 dark:border-white/5 rounded-xl shadow-sm dark:shadow-none overflow-hidden">
+        <div className="p-5 border-b border-gray-200 dark:border-white/10 flex justify-between items-center">
+          <h3 className="text-lg font-bold text-gray-900 dark:text-white">Your Holdings</h3>
+          <span className="text-xs text-gray-500 dark:text-muted-foreground bg-gray-100 dark:bg-white/5 px-3 py-1 rounded-full">{holdings.length} stocks</span>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-left">
             <thead>
-              <tr className="bg-sidebar-accent/10 border-b border-sidebar-border/50 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+              <tr className="bg-gray-100 dark:bg-white/5 border-b border-gray-200 dark:border-white/10 text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-muted-foreground">
                 <th className="px-4 py-2.5">Symbol</th><th className="px-4 py-2.5">Qty</th>
                 <th className="px-4 py-2.5">Avg Cost</th><th className="px-4 py-2.5">LTP</th>
                 <th className="px-4 py-2.5">P&L</th><th className="px-4 py-2.5">Day Change</th>
                 <th className="px-4 py-2.5 text-center">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-sidebar-border/30">
+            <tbody className="divide-y divide-gray-200 dark:divide-white/5">
               {holdings.map((h: any) => {
                 const pos = h.pnl >= 0;
                 const dayPct = (Math.random() * 4 - 2).toFixed(2);
                 const dayPos = parseFloat(dayPct) >= 0;
                 return (
-                  <tr key={h.id} className="hover:bg-sidebar-accent/5 transition-colors group text-sm">
+                  <tr key={h.id} className="hover:bg-gray-50 dark:hover:bg-white/5 transition-colors group text-sm">
                     <td className="px-4 py-2.5"><div className="flex items-center gap-2">
                       <div className="w-7 h-7 rounded-sm bg-sidebar-primary/10 flex items-center justify-center text-[10px] font-bold text-sidebar-primary border border-sidebar-primary/20">{h.symbol.substring(0, 2)}</div>
-                      <span className="font-bold text-white">{h.symbol}</span>
+                      <span className="font-bold text-gray-900 dark:text-white">{h.symbol}</span>
                     </div></td>
-                    <td className="px-4 py-2.5 font-mono text-muted-foreground">{h.quantity}</td>
-                    <td className="px-4 py-2.5 font-mono text-muted-foreground">₹{h.average_cost.toFixed(2)}</td>
-                    <td className="px-4 py-2.5 font-mono font-medium text-white">₹{h.ltp.toFixed(2)}</td>
+                    <td className="px-4 py-2.5 font-mono text-gray-500 dark:text-muted-foreground">{h.quantity}</td>
+                    <td className="px-4 py-2.5 font-mono text-gray-500 dark:text-muted-foreground">₹{h.average_cost.toFixed(2)}</td>
+                    <td className="px-4 py-2.5 font-mono font-medium text-gray-900 dark:text-white">₹{h.ltp.toFixed(2)}</td>
                     <td className="px-4 py-2.5"><div className="flex flex-col">
                       <span className={`font-mono font-medium ${pos ? 'text-green-500' : 'text-red-500'}`}>{pos ? '+' : ''}₹{h.pnl.toFixed(2)}</span>
-                      <span className="text-[10px] text-muted-foreground">{pos ? '+' : ''}{h.pnl_percent.toFixed(2)}%</span>
+                      <span className="text-[10px] text-gray-500 dark:text-muted-foreground">{pos ? '+' : ''}{h.pnl_percent.toFixed(2)}%</span>
                     </div></td>
                     <td className="px-4 py-2.5"><div className={`flex items-center gap-1 text-xs font-medium ${dayPos ? 'text-green-500' : 'text-red-500'}`}>
                       {dayPos ? <TrendingUp size={12} /> : <TrendingDown size={12} />}{dayPos ? '+' : ''}{dayPct}%
@@ -229,7 +229,7 @@ function HoldingsTab({ data, holdings, isPositive }: any) {
                 );
               })}
               {holdings.length === 0 && (
-                <tr><td colSpan={7} className="px-6 py-8 text-center text-muted-foreground">No holdings found.</td></tr>
+                <tr><td colSpan={7} className="px-6 py-8 text-center text-gray-500 dark:text-muted-foreground">No holdings found.</td></tr>
               )}
             </tbody>
           </table>
@@ -246,50 +246,50 @@ function HoldingsTab({ data, holdings, isPositive }: any) {
 function PositionsTab({ positions }: { positions: any[] }) {
   return (
     <div className="space-y-6 animate-in fade-in duration-300">
-      <div className="border border-sidebar-border bg-sidebar rounded-2xl overflow-hidden">
-        <div className="p-5 border-b border-sidebar-border/50 flex justify-between items-center">
-          <h3 className="text-lg font-bold text-white flex items-center gap-2">
+      <div className="group relative bg-white dark:bg-[#0a0a0a] border border-gray-200 dark:border-white/5 rounded-xl hover:border-gray-300 dark:hover:border-primary/50 transition-all duration-500 hover:shadow-xl dark:hover:shadow-[0_0_30px_-10px_rgba(59,130,246,0.3)] shadow-sm dark:shadow-none overflow-hidden">
+        <div className="p-5 border-b border-gray-200 dark:border-white/10 flex justify-between items-center">
+          <h3 className="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
             <Target className="w-5 h-5 text-sidebar-primary" /> Open Positions
           </h3>
-          <span className="text-xs bg-sidebar-accent/10 text-muted-foreground px-3 py-1 rounded-full">{positions.length} active</span>
+          <span className="text-xs bg-gray-100 dark:bg-white/5 text-gray-500 dark:text-muted-foreground px-3 py-1 rounded-full">{positions.length} active</span>
         </div>
         {positions.length === 0 ? (
           <div className="p-12 text-center">
-            <Target className="w-12 h-12 text-muted-foreground/30 mx-auto mb-3" />
-            <p className="text-muted-foreground text-sm">No open positions. Start trading to see live positions here.</p>
+            <Target className="w-12 h-12 text-gray-500 dark:text-muted-foreground/30 mx-auto mb-3" />
+            <p className="text-gray-500 dark:text-muted-foreground text-sm">No open positions. Start trading to see live positions here.</p>
           </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left">
               <thead>
-                <tr className="bg-sidebar-accent/10 border-b border-sidebar-border/50 text-[10px] font-black uppercase tracking-widest text-muted-foreground">
+                <tr className="bg-gray-100 dark:bg-white/5 border-b border-gray-200 dark:border-white/10 text-[10px] font-black uppercase tracking-widest text-gray-500 dark:text-muted-foreground">
                   <th className="px-4 py-2.5">Symbol</th><th className="px-4 py-2.5">Direction</th>
                   <th className="px-4 py-2.5">Qty</th><th className="px-4 py-2.5">Entry</th>
                   <th className="px-4 py-2.5">LTP</th><th className="px-4 py-2.5">Unrealized P&L</th>
                   <th className="px-4 py-2.5">Holding Time</th><th className="px-4 py-2.5">Sector</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-sidebar-border/30">
+              <tbody className="divide-y divide-gray-200 dark:divide-white/5">
                 {positions.map((p: any) => (
-                  <tr key={p.id} className="hover:bg-sidebar-accent/5 transition-colors text-sm">
-                    <td className="px-4 py-2.5 font-bold text-white">{p.symbol}</td>
+                  <tr key={p.id} className="hover:bg-gray-50 dark:hover:bg-white/5 transition-colors text-sm">
+                    <td className="px-4 py-2.5 font-bold text-gray-900 dark:text-white">{p.symbol}</td>
                     <td className="px-4 py-2.5">
                       <span className={`px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-widest ${p.direction === 'BUY' ? 'bg-green-500/10 text-green-500' : 'bg-red-500/10 text-red-500'}`}>{p.direction}</span>
                     </td>
-                    <td className="px-4 py-2.5 font-mono text-muted-foreground">{p.quantity}</td>
-                    <td className="px-4 py-2.5 font-mono text-muted-foreground">₹{p.entry_price}</td>
-                    <td className="px-4 py-2.5 font-mono text-white">₹{p.ltp}</td>
+                    <td className="px-4 py-2.5 font-mono text-gray-500 dark:text-muted-foreground">{p.quantity}</td>
+                    <td className="px-4 py-2.5 font-mono text-gray-500 dark:text-muted-foreground">₹{p.entry_price}</td>
+                    <td className="px-4 py-2.5 font-mono text-gray-900 dark:text-white">₹{p.ltp}</td>
                     <td className="px-4 py-2.5">
                       <span className={`font-mono font-bold ${p.is_positive ? 'text-green-500' : 'text-red-500'}`}>
                         {p.is_positive ? '+' : ''}₹{p.unrealized_pnl} ({p.pnl_percent}%)
                       </span>
                     </td>
-                    <td className="px-4 py-2.5 text-muted-foreground text-xs">
+                    <td className="px-4 py-2.5 text-gray-500 dark:text-muted-foreground text-xs">
                       <div className="flex items-center gap-1">
                         <Clock size={12} />{p.holding_minutes > 60 ? `${(p.holding_minutes / 60).toFixed(1)}h` : `${p.holding_minutes}m`}
                       </div>
                     </td>
-                    <td className="px-4 py-2.5"><span className="text-[10px] uppercase font-black tracking-widest bg-sidebar-accent/20 text-muted-foreground px-2 py-1 rounded">{p.sector}</span></td>
+                    <td className="px-4 py-2.5"><span className="text-[10px] uppercase font-black tracking-widest bg-sidebar-accent/20 text-gray-500 dark:text-muted-foreground px-2 py-1 rounded">{p.sector}</span></td>
                   </tr>
                 ))}
               </tbody>
@@ -313,18 +313,18 @@ function SectorsTab({ sectors }: { sectors: any }) {
     <div className="space-y-6 animate-in fade-in duration-300">
       {/* Top metrics */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="border border-sidebar-border bg-sidebar rounded-2xl p-5 text-center">
-          <p className="text-xs uppercase tracking-wider text-muted-foreground mb-2">Diversification Score</p>
+        <div className="group relative bg-white dark:bg-[#0a0a0a] border border-gray-200 dark:border-white/5 rounded-xl hover:border-gray-300 dark:hover:border-primary/50 transition-all duration-500 hover:shadow-xl dark:hover:shadow-[0_0_30px_-10px_rgba(59,130,246,0.3)] shadow-sm dark:shadow-none p-5 text-center">
+          <p className="text-xs uppercase tracking-wider text-gray-500 dark:text-muted-foreground mb-2">Diversification Score</p>
           <p className={`text-5xl font-black font-mono ${diversity_score > 70 ? 'text-green-500' : diversity_score > 40 ? 'text-yellow-500' : 'text-red-500'}`}>{diversity_score}</p>
-          <p className="text-xs text-muted-foreground mt-1">out of 100</p>
+          <p className="text-xs text-gray-500 dark:text-muted-foreground mt-1">out of 100</p>
         </div>
-        <div className="border border-sidebar-border bg-sidebar rounded-2xl p-5 text-center">
-          <p className="text-xs uppercase tracking-wider text-muted-foreground mb-2">Sectors Covered</p>
+        <div className="group relative bg-white dark:bg-[#0a0a0a] border border-gray-200 dark:border-white/5 rounded-xl hover:border-gray-300 dark:hover:border-primary/50 transition-all duration-500 hover:shadow-xl dark:hover:shadow-[0_0_30px_-10px_rgba(59,130,246,0.3)] shadow-sm dark:shadow-none p-5 text-center">
+          <p className="text-xs uppercase tracking-wider text-gray-500 dark:text-muted-foreground mb-2">Sectors Covered</p>
           <p className="text-5xl font-black font-mono text-sidebar-primary">{total_sectors}</p>
-          <p className="text-xs text-muted-foreground mt-1">unique sectors</p>
+          <p className="text-xs text-gray-500 dark:text-muted-foreground mt-1">unique sectors</p>
         </div>
-        <div className="border border-sidebar-border bg-sidebar rounded-2xl p-5 text-center">
-          <p className="text-xs uppercase tracking-wider text-muted-foreground mb-2">Risk Level</p>
+        <div className="group relative bg-white dark:bg-[#0a0a0a] border border-gray-200 dark:border-white/5 rounded-xl hover:border-gray-300 dark:hover:border-primary/50 transition-all duration-500 hover:shadow-xl dark:hover:shadow-[0_0_30px_-10px_rgba(59,130,246,0.3)] shadow-sm dark:shadow-none p-5 text-center">
+          <p className="text-xs uppercase tracking-wider text-gray-500 dark:text-muted-foreground mb-2">Risk Level</p>
           <div className="flex items-center justify-center gap-2 mt-2">
             <Shield className={`w-8 h-8 ${risk_level === 'Low' ? 'text-green-500' : risk_level === 'Medium' ? 'text-yellow-500' : 'text-red-500'}`} />
             <p className={`text-3xl font-black ${risk_level === 'Low' ? 'text-green-500' : risk_level === 'Medium' ? 'text-yellow-500' : 'text-red-500'}`}>{risk_level}</p>
@@ -335,8 +335,8 @@ function SectorsTab({ sectors }: { sectors: any }) {
       {/* Chart + Table */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Donut chart */}
-        <div className="border border-sidebar-border bg-sidebar rounded-2xl p-6">
-          <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2"><PieIcon className="w-5 h-5 text-sidebar-primary" /> Sector Allocation</h3>
+        <div className="group relative bg-white dark:bg-[#0a0a0a] border border-gray-200 dark:border-white/5 rounded-xl hover:border-gray-300 dark:hover:border-primary/50 transition-all duration-500 hover:shadow-xl dark:hover:shadow-[0_0_30px_-10px_rgba(59,130,246,0.3)] shadow-sm dark:shadow-none p-6">
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2"><PieIcon className="w-5 h-5 text-sidebar-primary" /> Sector Allocation</h3>
           <div className="h-[300px]">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
@@ -352,16 +352,16 @@ function SectorsTab({ sectors }: { sectors: any }) {
         </div>
 
         {/* Sector breakdown table */}
-        <div className="border border-sidebar-border bg-sidebar rounded-2xl p-6">
-          <h3 className="text-lg font-semibold text-white mb-4">Sector Breakdown</h3>
+        <div className="group relative bg-white dark:bg-[#0a0a0a] border border-gray-200 dark:border-white/5 rounded-xl hover:border-gray-300 dark:hover:border-primary/50 transition-all duration-500 hover:shadow-xl dark:hover:shadow-[0_0_30px_-10px_rgba(59,130,246,0.3)] shadow-sm dark:shadow-none p-6">
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Sector Breakdown</h3>
           <div className="space-y-3">
             {allocation.map((s: any) => (
               <div key={s.sector} className="flex items-center gap-3">
                 <div className="w-3 h-3 rounded-full flex-shrink-0" style={{ backgroundColor: s.color }} />
                 <div className="flex-1">
                   <div className="flex justify-between items-center mb-1">
-                    <span className="text-sm font-medium text-white">{s.sector}</span>
-                    <span className="text-xs font-mono text-muted-foreground">{s.percent}% · ₹{s.value.toLocaleString('en-IN')}</span>
+                    <span className="text-sm font-medium text-gray-900 dark:text-white">{s.sector}</span>
+                    <span className="text-xs font-mono text-gray-500 dark:text-muted-foreground">{s.percent}% · ₹{s.value.toLocaleString('en-IN')}</span>
                   </div>
                   <div className="w-full bg-sidebar-border/30 rounded-full h-1.5">
                     <div className="h-1.5 rounded-full transition-all duration-500" style={{ width: `${s.percent}%`, backgroundColor: s.color }} />
@@ -376,16 +376,16 @@ function SectorsTab({ sectors }: { sectors: any }) {
       {/* Concentration Risk Alerts */}
       {risks.length > 0 && (
         <div className="space-y-3">
-          <h3 className="text-lg font-semibold text-white flex items-center gap-2"><AlertTriangle className="w-5 h-5 text-yellow-500" /> Risk Alerts</h3>
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2"><AlertTriangle className="w-5 h-5 text-yellow-500" /> Risk Alerts</h3>
           {risks.map((r: any, i: number) => (
             <div key={i} className={`border rounded-xl p-4 flex items-start gap-3 ${r.severity === 'high' ? 'border-red-500/30 bg-red-500/5' : 'border-yellow-500/30 bg-yellow-500/5'}`}>
               <AlertTriangle className={`w-5 h-5 flex-shrink-0 mt-0.5 ${r.severity === 'high' ? 'text-red-500' : 'text-yellow-500'}`} />
               <div>
-                <p className="text-sm font-bold text-white">{r.title}</p>
-                <p className="text-xs text-muted-foreground mt-0.5">{r.description}</p>
+                <p className="text-sm font-bold text-gray-900 dark:text-white">{r.title}</p>
+                <p className="text-xs text-gray-500 dark:text-muted-foreground mt-0.5">{r.description}</p>
                 <div className="flex gap-3 mt-2">
-                  <span className="text-[10px] bg-white/5 px-2 py-0.5 rounded text-muted-foreground">Current: {r.metric}</span>
-                  <span className="text-[10px] bg-white/5 px-2 py-0.5 rounded text-muted-foreground">Threshold: {r.threshold}</span>
+                  <span className="text-[10px] bg-white/5 px-2 py-0.5 rounded text-gray-500 dark:text-muted-foreground">Current: {r.metric}</span>
+                  <span className="text-[10px] bg-white/5 px-2 py-0.5 rounded text-gray-500 dark:text-muted-foreground">Threshold: {r.threshold}</span>
                 </div>
               </div>
             </div>
@@ -397,7 +397,7 @@ function SectorsTab({ sectors }: { sectors: any }) {
           <Shield className="w-6 h-6 text-green-500" />
           <div>
             <p className="text-sm font-bold text-green-400">Portfolio Well Diversified</p>
-            <p className="text-xs text-muted-foreground">No concentration risks detected. Your allocation looks healthy.</p>
+            <p className="text-xs text-gray-500 dark:text-muted-foreground">No concentration risks detected. Your allocation looks healthy.</p>
           </div>
         </div>
       )}
@@ -417,10 +417,10 @@ function ResearchTab({ research }: { research: any }) {
   return (
     <div className="space-y-6 animate-in fade-in duration-300">
       {!hasData ? (
-        <div className="border border-sidebar-border bg-sidebar rounded-2xl p-12 text-center">
-          <Brain className="w-16 h-16 text-muted-foreground/20 mx-auto mb-4" />
-          <h3 className="text-xl font-bold text-white mb-2">No Trade History Yet</h3>
-          <p className="text-muted-foreground text-sm max-w-md mx-auto">Start trading in the simulator to unlock AI-powered behavioral analysis, win rate tracking, and personalized insights.</p>
+        <div className="group relative bg-white dark:bg-[#0a0a0a] border border-gray-200 dark:border-white/5 rounded-xl hover:border-gray-300 dark:hover:border-primary/50 transition-all duration-500 hover:shadow-xl dark:hover:shadow-[0_0_30px_-10px_rgba(59,130,246,0.3)] shadow-sm dark:shadow-none p-12 text-center">
+          <Brain className="w-16 h-16 text-gray-500 dark:text-muted-foreground/20 mx-auto mb-4" />
+          <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">No Trade History Yet</h3>
+          <p className="text-gray-500 dark:text-muted-foreground text-sm max-w-md mx-auto">Start trading in the simulator to unlock AI-powered behavioral analysis, win rate tracking, and personalized insights.</p>
         </div>
       ) : (
         <>
@@ -435,17 +435,17 @@ function ResearchTab({ research }: { research: any }) {
           {/* Win/Loss + Best/Worst */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* Win/Loss bar */}
-            <div className="border border-sidebar-border bg-sidebar rounded-2xl p-6">
-              <h4 className="text-sm font-bold text-white mb-4 uppercase tracking-wider">Win / Loss Distribution</h4>
+            <div className="group relative bg-white dark:bg-[#0a0a0a] border border-gray-200 dark:border-white/5 rounded-xl hover:border-gray-300 dark:hover:border-primary/50 transition-all duration-500 hover:shadow-xl dark:hover:shadow-[0_0_30px_-10px_rgba(59,130,246,0.3)] shadow-sm dark:shadow-none p-6">
+              <h4 className="text-sm font-bold text-gray-900 dark:text-white mb-4 uppercase tracking-wider">Win / Loss Distribution</h4>
               <div className="flex gap-1 h-6 rounded-full overflow-hidden mb-3">
                 <div className="bg-green-500 transition-all duration-700 flex items-center justify-center" style={{ width: `${research.win_rate}%` }}>
                   {research.win_rate > 15 && <span className="text-[10px] font-bold text-black">{research.wins}W</span>}
                 </div>
                 <div className="bg-red-500 transition-all duration-700 flex items-center justify-center" style={{ width: `${research.loss_rate}%` }}>
-                  {research.loss_rate > 15 && <span className="text-[10px] font-bold text-white">{research.losses}L</span>}
+                  {research.loss_rate > 15 && <span className="text-[10px] font-bold text-gray-900 dark:text-white">{research.losses}L</span>}
                 </div>
               </div>
-              <div className="flex justify-between text-xs text-muted-foreground">
+              <div className="flex justify-between text-xs text-gray-500 dark:text-muted-foreground">
                 <span className="text-green-500 font-mono">{research.win_rate}% wins</span>
                 <span className="text-red-500 font-mono">{research.loss_rate}% losses</span>
               </div>
@@ -458,7 +458,7 @@ function ResearchTab({ research }: { research: any }) {
                   <ArrowUpRight className="w-6 h-6 text-green-500 flex-shrink-0" />
                   <div className="flex-1 min-w-0">
                     <p className="text-[10px] uppercase tracking-wider text-green-400 font-bold">Best Trade</p>
-                    <p className="text-sm font-bold text-white truncate">{research.best_trade.symbol} · {research.best_trade.direction}</p>
+                    <p className="text-sm font-bold text-gray-900 dark:text-white truncate">{research.best_trade.symbol} · {research.best_trade.direction}</p>
                   </div>
                   <p className="text-lg font-bold font-mono text-green-500">+₹{research.best_trade.pnl}</p>
                 </div>
@@ -468,7 +468,7 @@ function ResearchTab({ research }: { research: any }) {
                   <ArrowDownRight className="w-6 h-6 text-red-500 flex-shrink-0" />
                   <div className="flex-1 min-w-0">
                     <p className="text-[10px] uppercase tracking-wider text-red-400 font-bold">Worst Trade</p>
-                    <p className="text-sm font-bold text-white truncate">{research.worst_trade.symbol} · {research.worst_trade.direction}</p>
+                    <p className="text-sm font-bold text-gray-900 dark:text-white truncate">{research.worst_trade.symbol} · {research.worst_trade.direction}</p>
                   </div>
                   <p className="text-lg font-bold font-mono text-red-500">₹{research.worst_trade.pnl}</p>
                 </div>
@@ -479,32 +479,32 @@ function ResearchTab({ research }: { research: any }) {
           {/* Sector Bias + Insights */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* Sector bias */}
-            <div className="border border-sidebar-border bg-sidebar rounded-2xl p-6">
-              <h4 className="text-sm font-bold text-white mb-4 uppercase tracking-wider flex items-center gap-2"><Target className="w-4 h-4 text-sidebar-primary" /> Trading Sector Bias</h4>
+            <div className="group relative bg-white dark:bg-[#0a0a0a] border border-gray-200 dark:border-white/5 rounded-xl hover:border-gray-300 dark:hover:border-primary/50 transition-all duration-500 hover:shadow-xl dark:hover:shadow-[0_0_30px_-10px_rgba(59,130,246,0.3)] shadow-sm dark:shadow-none p-6">
+              <h4 className="text-sm font-bold text-gray-900 dark:text-white mb-4 uppercase tracking-wider flex items-center gap-2"><Target className="w-4 h-4 text-sidebar-primary" /> Trading Sector Bias</h4>
               {research.sector_bias.length > 0 ? (
                 <div className="space-y-3">
                   {research.sector_bias.map((s: any) => (
                     <div key={s.sector} className="flex items-center gap-3">
-                      <span className="text-sm text-white w-24 truncate">{s.sector}</span>
+                      <span className="text-sm text-gray-900 dark:text-white w-24 truncate">{s.sector}</span>
                       <div className="flex-1 bg-sidebar-border/30 rounded-full h-2">
                         <div className="h-2 bg-sidebar-primary rounded-full transition-all duration-500" style={{ width: `${s.percent}%` }} />
                       </div>
-                      <span className="text-xs font-mono text-muted-foreground w-16 text-right">{s.count} ({s.percent}%)</span>
+                      <span className="text-xs font-mono text-gray-500 dark:text-muted-foreground w-16 text-right">{s.count} ({s.percent}%)</span>
                     </div>
                   ))}
                 </div>
               ) : (
-                <p className="text-muted-foreground text-sm">No sector data available.</p>
+                <p className="text-gray-500 dark:text-muted-foreground text-sm">No sector data available.</p>
               )}
             </div>
 
             {/* AI Insights */}
-            <div className="border border-sidebar-border bg-sidebar rounded-2xl p-6">
-              <h4 className="text-sm font-bold text-white mb-4 uppercase tracking-wider flex items-center gap-2"><Brain className="w-4 h-4 text-purple-400" /> AI Insights</h4>
+            <div className="group relative bg-white dark:bg-[#0a0a0a] border border-gray-200 dark:border-white/5 rounded-xl hover:border-gray-300 dark:hover:border-primary/50 transition-all duration-500 hover:shadow-xl dark:hover:shadow-[0_0_30px_-10px_rgba(59,130,246,0.3)] shadow-sm dark:shadow-none p-6">
+              <h4 className="text-sm font-bold text-gray-900 dark:text-white mb-4 uppercase tracking-wider flex items-center gap-2"><Brain className="w-4 h-4 text-purple-400" /> AI Insights</h4>
               <div className="space-y-3">
                 {research.insights.map((insight: string, i: number) => (
                   <div key={i} className="p-3 bg-white/[0.02] border border-white/5 rounded-xl">
-                    <p className="text-sm text-muted-foreground leading-relaxed">{insight}</p>
+                    <p className="text-sm text-gray-500 dark:text-muted-foreground leading-relaxed">{insight}</p>
                   </div>
                 ))}
               </div>
@@ -520,9 +520,9 @@ function ResearchTab({ research }: { research: any }) {
 // ─── Reusable Stat Card ────────────────────────────────────────
 function StatCard({ icon, label, value, color }: { icon: React.ReactNode; label: string; value: any; color: string }) {
   return (
-    <div className="border border-sidebar-border bg-sidebar rounded-2xl p-5 text-center">
+    <div className="group relative bg-white dark:bg-[#0a0a0a] border border-gray-200 dark:border-white/5 rounded-xl hover:border-gray-300 dark:hover:border-primary/50 transition-all duration-500 hover:shadow-xl dark:hover:shadow-[0_0_30px_-10px_rgba(59,130,246,0.3)] shadow-sm dark:shadow-none p-5 text-center">
       <div className={`${color} mx-auto mb-2 opacity-60`}>{icon}</div>
-      <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1">{label}</p>
+      <p className="text-[10px] uppercase tracking-wider text-gray-500 dark:text-muted-foreground mb-1">{label}</p>
       <p className={`text-2xl font-black font-mono ${color}`}>{value}</p>
     </div>
   );
