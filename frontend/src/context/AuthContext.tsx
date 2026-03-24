@@ -1,17 +1,10 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { login as apiLogin, register as apiRegister, logout as apiLogout, checkAuthStatus } from '@/services/AuthService';
-
-interface UserProfile {
-    email: string;
-    full_name?: string;
-    id?: number;
-}
+import { supabase } from '../lib/supabase';
+import type { User } from '@supabase/supabase-js';
 
 interface AuthContextType {
-    user: UserProfile | null;
-    login: (data: any) => Promise<void>;
-    register: (data: any) => Promise<void>;
-    logout: () => void;
+    user: User | null;
+    logout: () => Promise<void>;
     isAuthenticated: boolean;
     isLoading: boolean;
 }
@@ -19,72 +12,36 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode; }> = ({ children }) => {
-    // HYBRID STRATEGY: Load initial state from LocalStorage for speed
-    const [user, setUser] = useState<UserProfile | null>(() => {
-        const savedUser = localStorage.getItem('user_profile');
-        return savedUser ? JSON.parse(savedUser) : null;
-    });
-    const [isAuthenticated, setIsAuthenticated] = useState<boolean>(!!user);
+    const [user, setUser] = useState<User | null>(null);
     const [isLoading, setIsLoading] = useState<boolean>(true);
 
-    // BACKGROUND CHECK: Verify if the cookie is actually valid
     useEffect(() => {
-        const verifySession = async () => {
-            // Only verify if we have a reason to believe a session exists (LocalStorage flag)
-            // This avoids the "noisy" 401 error in the console for unauthenticated users
-            if (!user) {
-                setIsLoading(false);
-                return;
-            }
-
-            try {
-                const userData = await checkAuthStatus();
-                // If successful, update local state (sync)
-                setUser(userData);
-                localStorage.setItem('user_profile', JSON.stringify(userData));
-                setIsAuthenticated(true);
-            } catch (error) {
-                console.log("⚠️ Backend session invalid. Clearing local state.");
-                // Token expired or invalid -> Clear local state
-                localStorage.removeItem('user_profile');
-                setUser(null);
-                setIsAuthenticated(false);
-            } finally {
-                setIsLoading(false);
-            }
+        // 1. Get initial session
+        const initSession = async () => {
+            const { data: { session } } = await supabase.auth.getSession();
+            setUser(session?.user ?? null);
+            setIsLoading(false);
         };
 
-        verifySession();
+        initSession();
+
+        // 2. Listen for auth changes
+        const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+            setUser(session?.user ?? null);
+            setIsLoading(false);
+        });
+
+        return () => subscription.unsubscribe();
     }, []);
 
-    const login = async (data: any) => {
-        const userData = await apiLogin(data);
-        // Save minimal profile to LocalStorage (No sensitive tokens!)
-        setUser(userData);
-        localStorage.setItem('user_profile', JSON.stringify(userData));
-        setIsAuthenticated(true);
-    };
-
-    const register = async (data: any) => {
-        const userData = await apiRegister(data);
-        setUser(userData);
-        localStorage.setItem('user_profile', JSON.stringify(userData));
-        setIsAuthenticated(true);
-    };
-
     const logout = async () => {
-        try {
-            await apiLogout();
-        } catch (e) {
-            console.error("Logout failed", e);
-        }
-        localStorage.removeItem('user_profile');
-        setUser(null);
-        setIsAuthenticated(false);
+        await supabase.auth.signOut();
     };
+
+    const isAuthenticated = !!user;
 
     return (
-        <AuthContext.Provider value={{ user, login, register, logout, isAuthenticated, isLoading }}>
+        <AuthContext.Provider value={{ user, logout, isAuthenticated, isLoading }}>
             {children}
         </AuthContext.Provider>
     );

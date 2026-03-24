@@ -1,4 +1,4 @@
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useState } from 'react';
 import { Sun, Moon, Search, Bell } from 'lucide-react';
 import { useThemeStore } from '../../store/themeStore';
@@ -13,7 +13,7 @@ const Topbar = () => {
   const { setSymbol } = useGame();
   const { activeChartId } = useMultiChartStore();
   const [isSearchOpen, setIsSearchOpen] = useState(false);
-  // const location = useLocation(); // This was removed as it was unused.
+  const navigate = useNavigate();
 
   return (
     <header className={`sticky top-0 h-14 min-h-[56px] flex items-center justify-between px-4 lg:px-6 transition-all duration-300 z-50 bg-white dark:bg-[#121212] border-b border-slate-200 dark:border-white/10 backdrop-blur-sm shadow-sm`}>
@@ -25,6 +25,8 @@ const Topbar = () => {
           if (activeChartId) {
             useMultiChartStore.getState().updateChart(activeChartId, { symbol });
           }
+          // Redirect to trade page if not already there
+          navigate('/trade');
         }}
         activeChartId={activeChartId}
       />
