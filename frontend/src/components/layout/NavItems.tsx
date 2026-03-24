@@ -3,7 +3,7 @@ import { useState, useRef, useEffect } from 'react';
 import { ChevronDown, Newspaper, LineChart, History, Briefcase, LayoutDashboard } from 'lucide-react';
 
 const navItems = [
-    { name: 'Trade', path: '/', icon: LineChart },
+    { name: 'Trade', path: '/trade', icon: LineChart },
     { name: 'Markets', path: '/markets', icon: LayoutDashboard },
     { name: 'Portfolio', path: '/portfolio', icon: Briefcase },
     { name: 'Screener', path: '/screener', icon: History },

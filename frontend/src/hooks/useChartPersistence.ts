@@ -1,5 +1,4 @@
 import { useEffect, useRef } from 'react';
-import { useAuth } from '../context/AuthContext';
 import { useIndicatorSettings } from '../store/useIndicatorSettings';
 import { useChartObjects } from '../store/useChartObjects';
 import axios from 'axios';
@@ -9,18 +8,12 @@ import axios from 'axios';
  * Handles initial load on login and debounced auto-save on changes.
  */
 export const useChartPersistence = () => {
-    const { isAuthenticated } = useAuth();
     const { settings, setSettings } = useIndicatorSettings();
     const { objects, drawings, setTemplates, setDrawings } = useChartObjects();
     const isInitialLoad = useRef(true);
 
-    // Initial Load: Fetch settings from backend on mount or login
+    // Initial Load: Fetch settings from backend on mount
     useEffect(() => {
-        if (!isAuthenticated) {
-            isInitialLoad.current = true;
-            return;
-        }
-
         const loadSettings = async () => {
             try {
                 const [settingsRes, templatesRes] = await Promise.all([
@@ -56,12 +49,12 @@ export const useChartPersistence = () => {
         };
 
         loadSettings();
-    }, [isAuthenticated, setSettings, setDrawings, setTemplates]);
+    }, [setSettings, setDrawings, setTemplates]);
 
     // Auto-save: Debounced sync to backend on state changes
     useEffect(() => {
-        // Skip saving during initial load or if not authenticated
-        if (isInitialLoad.current || !isAuthenticated) return;
+        // Skip saving during initial load
+        if (isInitialLoad.current) return;
 
         const timeout = setTimeout(async () => {
             const active_indicators = objects
@@ -81,5 +74,5 @@ export const useChartPersistence = () => {
         }, 3000);
 
         return () => clearTimeout(timeout);
-    }, [objects, settings, drawings, isAuthenticated]);
+    }, [objects, settings, drawings]);
 };

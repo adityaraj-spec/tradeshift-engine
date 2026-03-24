@@ -171,6 +171,60 @@ Please read our [CONTRIBUTING.md](CONTRIBUTING.md) for details on our code of co
 
 ---
 
+## 🚦 Getting Started
+
+### 1. Supabase Setup (Required for Auth)
+To enable the authentication and profile features, you need a Supabase project:
+1.  Go to the [Supabase Dashboard](https://app.supabase.com/) and create a new project.
+2.  Navigate to **Settings > API**.
+3.  Copy the `Project URL` and the `anon public` Key.
+
+### 2. Environment Configuration
+We use Vite-style environment variables.
+1.  Navigate to the `frontend` directory:
+    ```bash
+    cd frontend
+    ```
+2.  Rename the example file and fill in your Supabase values:
+    ```bash
+    cp .env.example .env
+    # Edit .env with your VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY
+    ```
+
+### 3. Running the Application
+**Development Mode:**
+```bash
+npm install
+npm run dev
+```
+Visit `http://localhost:5173` (or the port shown in your terminal).
+
+**Production Build:**
+```bash
+npm run build
+# The build artifacts will be in frontend/dist
+```
+
+---
+
+## 🧪 Testing the Auth Flow
+
+Follow these steps to verify your local setup is working correctly:
+
+1.  **Launch**: Start the dev server (`npm run dev`).
+2.  **Navigate**: You will be automatically redirected to `/auth` because of the `ProtectedRoute`.
+3.  **Sign Up**: Switch to "Create Account" mode. Enter a valid email and password.
+4.  **Confirm**: Check your email for the Supabase confirmation link (or disable email confirmation in Supabase **Auth > Settings** for instant testing).
+5.  **Profile Check**: Once logged in, you should land on the `/profile` page.
+6.  **Verify Data**:
+    -   Check that your **Demat Code** (e.g., `TDS-NEW-001`) is visible.
+    -   Fill out the **Investing Profile** form (Select experience, risk, goals, etc.).
+    -   Click **Update Explorer Profile**.
+    -   Verify the "Profile updated successfully!" toast appears and the data persists on refresh.
+    -   (Advanced) Check your Supabase Dashboard **Table Editor > profiles** to see your data live.
+
+---
+
 ## 📄 License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
