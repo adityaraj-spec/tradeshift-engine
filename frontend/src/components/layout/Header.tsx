@@ -3,7 +3,6 @@ import { useState } from 'react';
 import { Sun, Moon, Search, Bell } from 'lucide-react';
 import { useThemeStore } from '../../store/themeStore';
 import { NavItems } from './NavItems';
-import { UserDropdown } from './UserDropdown';
 import { SymbolSearch } from '../features/SymbolSearch';
 import { useGame } from '../../hooks/useGame';
 import { useMultiChartStore } from '../../store/useMultiChartStore';
@@ -74,8 +73,6 @@ const Topbar = () => {
         <button className="text-tv-text-secondary hover:text-tv-text-primary transition-colors duration-300" title="Notifications">
           <Bell size={20} />
         </button>
-
-        <UserDropdown />
       </div>
     </header>
   );
