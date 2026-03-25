@@ -17,15 +17,22 @@ export default defineConfig({
     host: '0.0.0.0',
     proxy: {
       '/auth': {
-        target: 'http://127.0.0.1:8000',
+        target: 'http://backend:8000',
         changeOrigin: true,
       },
+      '/api/chat': {
+        target: 'http://localhost:8001',
+        changeOrigin: true,
+        secure: false,
+        timeout: 30000,
+        proxyTimeout: 30000,
+      },
       '/api': {
-        target: 'http://127.0.0.1:8000',
+        target: 'http://backend:8000',
         changeOrigin: true,
       },
       '/ws': {
-        target: 'http://127.0.0.1:8000',
+        target: 'http://backend:8000',
         ws: true,
         changeOrigin: true,
       },
