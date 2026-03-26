@@ -63,6 +63,7 @@ const ScreenerPage: React.FC = () => {
   useEffect(() => {
     let result = [...candidates];
 
+
     // Sort
     result.sort((a, b) => {
       const valA = a[sortBy] as number;
@@ -73,10 +74,16 @@ const ScreenerPage: React.FC = () => {
     // Filter by sector/category if needed
     if (category !== 'All') {
       result = result.filter(c => c.sector.includes(category) || c.name.includes(category));
+      result = result.filter(c => c.sector.includes(category) || c.name.includes(category));
     }
 
     // Filter by search query
     if (searchQuery.trim() !== '') {
+      const query = searchQuery.toLowerCase();
+      result = result.filter(c =>
+        c.symbol.toLowerCase().includes(query) ||
+        c.name.toLowerCase().includes(query)
+      );
       const query = searchQuery.toLowerCase();
       result = result.filter(c =>
         c.symbol.toLowerCase().includes(query) ||
@@ -138,6 +145,7 @@ const ScreenerPage: React.FC = () => {
           </div>
         </div>
 
+
         {/* Background blobs */}
         <div className="absolute top-0 right-0 w-64 h-64 bg-primary/10 rounded-full blur-[100px] -mr-32 -mt-32"></div>
         <div className="absolute bottom-0 left-0 w-48 h-48 bg-blue-500/10 rounded-full blur-[80px] -ml-24 -mb-24"></div>
@@ -172,7 +180,7 @@ const ScreenerPage: React.FC = () => {
               ))}
             </div>
 
-            <div className="flex flex-col sm:flex-row items-center gap-4 w-full lg:w-auto justify-end">
+            <div className="flex flex-col sm:flex-row items-center gap-4 w-full lg:w-auto justify-center">
               <div className="relative w-full sm:w-64">
                 <input
                   type="text"
@@ -201,8 +209,9 @@ const ScreenerPage: React.FC = () => {
           </div>
 
           {/* Grid of Potential Multi-baggers */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 m-3">
             {filteredCandidates.map((stock, idx) => (
+              <div
               <div
                 key={stock.symbol}
                 className="group relative bg-white dark:bg-[#0a0a0a] border border-slate-200 dark:border-white/5 rounded-md p-6 hover:border-primary/50 transition-all duration-500 hover:shadow-[0_0_30px_-10px_rgba(59,130,246,0.2)] dark:hover:shadow-[0_0_30px_-10px_rgba(59,130,246,0.3)] flex flex-col justify-between shadow-sm"
@@ -218,9 +227,9 @@ const ScreenerPage: React.FC = () => {
                       <p className="text-xs text-slate-400 dark:text-gray-500 font-medium truncate max-w-[150px]">{stock.name}</p>
                     </div>
                     <div className="flex flex-col items-end">
-                      <div className="px-2 py-1 bg-primary/10 border border-primary/20 rounded-lg flex items-center gap-1.5">
+                      <div className="px-2 py-1 bg-primary/10 border border-primary/20 rounded-lg flex items-center gap-1.5 mr-2">
                         <BrainCircuit className="w-3.5 h-3.5 text-primary" />
-                        <span className="text-xs font-black text-primary">{stock.conviction_score}%</span>
+                        <span className="text-xs font-black text-primary p-1">{stock.conviction_score}%</span>
                       </div>
                       <span className="text-[10px] text-slate-400 dark:text-gray-600 mt-1 uppercase font-bold tracking-tighter">Conviction Score</span>
                     </div>
@@ -292,7 +301,10 @@ const ScreenerPage: React.FC = () => {
                 >
                   Start Deep Learning
                   <ChevronRight className="w-4 h-4 ml-2" />
+                  Start Deep Learning
+                  <ChevronRight className="w-4 h-4 ml-2" />
                 </Button>
+
 
                 {/* Mirror reflection element */}
                 <div className="absolute inset-0 bg-gradient-to-tr from-primary/0 via-primary/0 to-primary/5 opacity-0 group-hover:opacity-100 transition-opacity rounded-md pointer-events-none"></div>
