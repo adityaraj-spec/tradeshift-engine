@@ -14,6 +14,7 @@ const Topbar = () => {
   const { activeChartId } = useMultiChartStore();
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const { user, loading, logout } = useAuth();
   const navigate = useNavigate();
 

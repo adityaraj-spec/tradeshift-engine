@@ -7,7 +7,7 @@ import {
    
   Brain, 
    
-   
+  
   Layers,
   Sparkles,
   Newspaper,
@@ -92,7 +92,7 @@ const ResearchHub: React.FC = () => {
           <span className={`text-xs font-medium px-3 py-1.5 rounded-lg transition-all cursor-pointer flex items-center gap-1.5 ${isLaymanMode ? 'bg-green-500 text-white dark:text-black shadow-sm' : 'text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white'}`} onClick={() => setIsLaymanMode(true)}>
             <Brain className="w-3.5 h-3.5" />
             Layman Explain
-          </button>
+          </span>
         </div>
       </div>
 
