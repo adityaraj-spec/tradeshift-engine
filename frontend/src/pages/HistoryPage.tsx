@@ -163,7 +163,7 @@ export default function HistoryPage() {
       )}
 
       {/* ─── FILTER BAR ─── */}
-      <div className="bg-white dark:bg-[#0a0a0a] border border-gray-200 dark:border-white/5 rounded-xl shadow-sm dark:shadow-none p-4 flex flex-col lg:flex-row gap-4 items-end">
+       <div className="bg-white dark:bg-[#0a0a0a] border border-gray-200 dark:border-white/5 rounded-xl shadow-sm dark:shadow-none p-4 flex flex-col lg:flex-row gap-4 items-end">
         
         <div className="flex-1 w-full flex flex-col md:flex-row gap-4">
           <div className="flex-1 space-y-1.5">

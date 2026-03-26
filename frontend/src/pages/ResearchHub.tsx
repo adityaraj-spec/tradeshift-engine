@@ -92,7 +92,7 @@ const ResearchHub: React.FC = () => {
           <span className={`text-xs font-medium px-3 py-1.5 rounded-lg transition-all cursor-pointer flex items-center gap-1.5 ${isLaymanMode ? 'bg-green-500 text-white dark:text-black shadow-sm' : 'text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white'}`} onClick={() => setIsLaymanMode(true)}>
             <Brain className="w-3.5 h-3.5" />
             Layman Explain
-          </span>
+          </button>
         </div>
       </div>
 
@@ -236,7 +236,7 @@ const ResearchHub: React.FC = () => {
                 <CalendarDays className="w-5 h-5 text-primary" />
                 <h2 className="text-xl font-semibold">Quarterly Performance</h2>
               </div>
-              <div className="bg-[#0a0a0a] rounded-2xl border border-white/5 overflow-hidden">
+              <div className="bg-[#0a0a0a] rounded-md border border-white/5 overflow-hidden">
                 <div className="overflow-x-auto custom-scrollbar">
                   <table className="w-full text-left border-collapse">
                     <thead>
@@ -311,7 +311,7 @@ const ResearchHub: React.FC = () => {
                     href={item.url} 
                     target="_blank" 
                     rel="noopener noreferrer"
-                    className="block group bg-[#0a0a0a] p-5 rounded-2xl border border-white/5 hover:border-primary/30 transition-all hover:-translate-y-1 hover:shadow-lg"
+                    className="block group bg-[#0a0a0a] p-5 rounded-md border border-white/5 hover:border-primary/30 transition-all hover:-translate-y-1 hover:shadow-lg"
                   >
                     <div className="flex justify-between items-start gap-4 mb-2">
                       <h4 className="font-bold text-sm text-white group-hover:text-primary transition-colors line-clamp-2 leading-relaxed">
@@ -338,7 +338,7 @@ const ResearchHub: React.FC = () => {
                   </a>
                 ))
               ) : (
-                <div className="text-center py-8 bg-[#0a0a0a] rounded-2xl border border-white/5 text-sm text-gray-500">
+                <div className="text-center py-8 bg-[#0a0a0a] rounded-md border border-white/5 text-sm text-gray-500">
                   No recent insights available for this symbol.
                 </div>
               )}
