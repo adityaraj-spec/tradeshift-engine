@@ -1,4 +1,4 @@
-import { Activity, AlertCircle, Moon, Sun, Monitor } from 'lucide-react';
+import { Activity, AlertCircle } from 'lucide-react';
 import { useGame } from '../hooks/useGame';
 import { useTheme } from '../context/ThemeContext';
 import { useThemeStore } from '../store/themeStore';
