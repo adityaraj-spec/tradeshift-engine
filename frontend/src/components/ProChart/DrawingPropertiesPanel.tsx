@@ -3,6 +3,18 @@ import { Settings, Lock, Unlock, Trash2, MoreHorizontal, GripVertical, AlarmCloc
 import type { DrawingToolsManager } from '@pipsend/charts';
 import { DrawingAlertModal } from './DrawingAlertModal';
 import { DrawingSettingsModal } from './DrawingSettingsModal';
+import { PremiumSelect, type Option } from '@/components/ui/PremiumSelect';
+
+const FONT_SIZE_OPTIONS: Option[] = [10, 12, 14, 16, 20, 24, 32].map(s => ({ value: s.toString(), label: s.toString() }));
+const ORIENTATION_OPTIONS: Option[] = [
+  { value: 'horizontal', label: 'Horizontal' },
+  { value: 'parallel', label: 'Parallel' }
+];
+const POSITION_OPTIONS: Option[] = [
+  { value: 'top', label: 'Top' },
+  { value: 'middle', label: 'Middle' },
+  { value: 'bottom', label: 'Bottom' }
+];
 
 const Tooltip = ({ children, text }: { children: React.ReactNode, text: string }) => {
   const [isVisible, setIsVisible] = useState(false);
@@ -409,13 +421,15 @@ export const DrawingPropertiesPanel: React.FC<DrawingPropertiesPanelProps> = ({
                   <div className="w-full h-full" style={{ backgroundColor: textColor }}></div>
                 </div>
               </div>
-              <select 
-                value={fontSize} 
-                onChange={(e) => handleFontSizeChange(Number(e.target.value))}
-                className="h-6 bg-gray-100 dark:bg-[#2a2e39] border border-gray-300 dark:border-[#363a45] rounded px-1 text-[10px] outline-none dark:text-white"
-              >
-                {[10, 12, 14, 16, 20, 24, 32].map(s => <option key={s} value={s}>{s}</option>)}
-              </select>
+              <div className="w-16">
+                <PremiumSelect 
+                  value={fontSize.toString()} 
+                  onChange={(v) => handleFontSizeChange(Number(v))}
+                  options={FONT_SIZE_OPTIONS}
+                  className="h-6 bg-gray-100 dark:bg-[#2a2e39] border border-gray-300 dark:border-[#363a45] rounded px-1 text-[10px] outline-none dark:text-white"
+                  dropdownClassName="min-w-[80px]"
+                />
+              </div>
               <button 
                 onClick={toggleBold}
                 className={`w-6 h-6 rounded flex items-center justify-center border ${isBold ? 'bg-blue-600 border-blue-600 text-white' : 'border-gray-300 dark:border-[#363a45] text-gray-600 dark:text-gray-400'}`}
@@ -431,23 +445,24 @@ export const DrawingPropertiesPanel: React.FC<DrawingPropertiesPanelProps> = ({
             </div>
             
             <div className="flex border-t border-gray-100 dark:border-[#2a2e39] pt-2 gap-2">
-              <select 
-                value={textOrientation} 
-                onChange={(e) => handleOrientationChange(e.target.value)}
-                className="w-1/2 h-6 bg-gray-100 dark:bg-[#2a2e39] border border-gray-300 dark:border-[#363a45] rounded px-1 text-[10px] outline-none dark:text-white"
-              >
-                <option value="horizontal">Horizontal</option>
-                <option value="parallel">Parallel</option>
-              </select>
-              <select 
-                value={textPosition} 
-                onChange={(e) => handlePositionChange(e.target.value)}
-                className="w-1/2 h-6 bg-gray-100 dark:bg-[#2a2e39] border border-gray-300 dark:border-[#363a45] rounded px-1 text-[10px] outline-none dark:text-white"
-              >
-                <option value="top">Top</option>
-                <option value="middle">Middle</option>
-                <option value="bottom">Bottom</option>
-              </select>
+              <div className="w-1/2">
+                <PremiumSelect 
+                  value={textOrientation} 
+                  onChange={(v) => handleOrientationChange(v)}
+                  options={ORIENTATION_OPTIONS}
+                  className="w-full h-6 bg-gray-100 dark:bg-[#2a2e39] border border-gray-300 dark:border-[#363a45] rounded px-1 text-[10px] outline-none dark:text-white"
+                  dropdownClassName="min-w-[100px]"
+                />
+              </div>
+              <div className="w-1/2">
+                <PremiumSelect 
+                  value={textPosition} 
+                  onChange={(v) => handlePositionChange(v)}
+                  options={POSITION_OPTIONS}
+                  className="w-full h-6 bg-gray-100 dark:bg-[#2a2e39] border border-gray-300 dark:border-[#363a45] rounded px-1 text-[10px] outline-none dark:text-white"
+                  dropdownClassName="min-w-[100px]"
+                />
+              </div>
             </div>
           </div>
         )}

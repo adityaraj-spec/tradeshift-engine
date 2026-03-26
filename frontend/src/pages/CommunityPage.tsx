@@ -12,8 +12,11 @@ import {
   Smile, 
   Paperclip,
   ChevronDown,
-  Info
+  Info,
+  Lock
 } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
+import { Link } from 'react-router-dom';
 
 const channels = [
   { id: '1', name: 'general', type: 'public' },
@@ -57,6 +60,7 @@ const messages = [
 const CommunityPage = () => {
   const [activeChannel, setActiveChannel] = useState(channels[0]);
   const [message, setMessage] = useState('');
+  const { user } = useAuth();
 
   return (
     <div className="flex h-[calc(100vh-56px)] bg-white dark:bg-[#1a1d21] overflow-hidden">
@@ -229,40 +233,66 @@ const CommunityPage = () => {
         </div>
 
         {/* Input Area */}
-        <div className="p-4 pt-0">
-          <div className="border-2 border-slate-200 dark:border-white/10 rounded-xl bg-white dark:bg-[#222529] focus-within:border-slate-300 dark:focus-within:border-white/20 transition-all shadow-sm">
-            <div className="flex items-center gap-1 p-1 border-b border-slate-100 dark:border-white/5">
-               <button className="p-1.5 text-slate-500 hover:bg-slate-100 dark:hover:bg-white/5 rounded"><b>B</b></button>
-               <button className="p-1.5 text-slate-500 hover:bg-slate-100 dark:hover:bg-white/5 rounded"><i>I</i></button>
-               <button className="p-1.5 text-slate-500 hover:bg-slate-100 dark:hover:bg-white/5 rounded"><s>S</s></button>
-               <div className="w-[1px] h-4 bg-slate-200 dark:bg-white/10 mx-1" />
-               <button className="p-1.5 text-slate-500 hover:bg-slate-100 dark:hover:bg-white/5 rounded"><Plus size={16} /></button>
-            </div>
-            <textarea
-              value={message}
-              onChange={(e) => setMessage(e.target.value)}
-              placeholder={`Message #${activeChannel.name}`}
-              className="w-full bg-transparent border-none focus:ring-0 p-3 text-[15px] text-slate-700 dark:text-slate-200 resize-none min-h-[80px]"
-            />
-            <div className="flex items-center justify-between p-2">
-              <div className="flex items-center gap-0.5">
-                <button className="p-1.5 text-slate-500 hover:bg-slate-100 dark:hover:bg-white/5 rounded"><Plus size={18} /></button>
-                <div className="w-[1px] h-4 bg-slate-200 dark:bg-white/10 mx-1" />
-                <button className="p-1.5 text-slate-500 hover:bg-slate-100 dark:hover:bg-white/5 rounded"><Smile size={18} /></button>
-                <button className="p-1.5 text-slate-500 hover:bg-slate-100 dark:hover:bg-white/5 rounded"><AtSign size={18} /></button>
+        <div className="p-4 pt-0 mt-auto">
+          {user ? (
+            <div className="border-2 border-slate-200 dark:border-white/10 rounded-xl bg-white dark:bg-[#222529] focus-within:border-slate-300 dark:focus-within:border-white/20 transition-all shadow-sm">
+              <div className="flex items-center gap-1 p-1 border-b border-slate-100 dark:border-white/5">
+                 <button className="p-1.5 text-slate-500 hover:bg-slate-100 dark:hover:bg-white/5 rounded"><b>B</b></button>
+                 <button className="p-1.5 text-slate-500 hover:bg-slate-100 dark:hover:bg-white/5 rounded"><i>I</i></button>
+                 <button className="p-1.5 text-slate-500 hover:bg-slate-100 dark:hover:bg-white/5 rounded"><s>S</s></button>
+                 <div className="w-[1px] h-4 bg-slate-200 dark:bg-white/10 mx-1" />
+                 <button className="p-1.5 text-slate-500 hover:bg-slate-100 dark:hover:bg-white/5 rounded"><Plus size={16} /></button>
               </div>
-              <button 
-                className={`p-2 rounded transition-all ${
-                  message.trim() 
-                    ? 'bg-tv-primary text-white scale-100' 
-                    : 'bg-slate-200 dark:bg-white/5 text-slate-500 cursor-not-allowed scale-95'
-                }`}
-                disabled={!message.trim()}
-              >
-                <Send size={18} />
-              </button>
+              <textarea
+                value={message}
+                onChange={(e) => setMessage(e.target.value)}
+                placeholder={`Message #${activeChannel.name}`}
+                className="w-full bg-transparent border-none focus:ring-0 p-3 text-[15px] text-slate-700 dark:text-slate-200 resize-none min-h-[80px]"
+              />
+              <div className="flex items-center justify-between p-2">
+                <div className="flex items-center gap-0.5">
+                  <button className="p-1.5 text-slate-500 hover:bg-slate-100 dark:hover:bg-white/5 rounded"><Plus size={18} /></button>
+                  <div className="w-[1px] h-4 bg-slate-200 dark:bg-white/10 mx-1" />
+                  <button className="p-1.5 text-slate-500 hover:bg-slate-100 dark:hover:bg-white/5 rounded"><Smile size={18} /></button>
+                  <button className="p-1.5 text-slate-500 hover:bg-slate-100 dark:hover:bg-white/5 rounded"><AtSign size={18} /></button>
+                </div>
+                <button 
+                  className={`p-2 rounded transition-all ${
+                    message.trim() 
+                      ? 'bg-tv-primary text-white scale-100' 
+                      : 'bg-slate-200 dark:bg-white/5 text-slate-500 cursor-not-allowed scale-95'
+                  }`}
+                  disabled={!message.trim()}
+                >
+                  <Send size={18} />
+                </button>
+              </div>
             </div>
-          </div>
+          ) : (
+             <div className="border border-slate-200 dark:border-white/10 rounded-xl bg-slate-50 dark:bg-[#1E222D] p-6 text-center flex flex-col items-center justify-center shadow-sm">
+                <div className="w-12 h-12 bg-tv-primary/10 rounded-full flex items-center justify-center mb-3">
+                  <Lock className="text-tv-primary" size={24} />
+                </div>
+                <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-1">Join the conversation</h3>
+                <p className="text-sm text-slate-500 dark:text-slate-400 mb-4 max-w-sm">
+                   You must be logged in to send messages and interact with the TradeShift community.
+                </p>
+                <div className="flex items-center gap-3">
+                   <Link 
+                     to="/login"
+                     className="px-6 py-2 bg-tv-primary hover:bg-tv-primary-hover text-white rounded-lg font-semibold transition-colors text-sm"
+                   >
+                     Log In
+                   </Link>
+                   <Link 
+                     to="/signup"
+                     className="px-6 py-2 bg-slate-200 dark:bg-white/10 hover:bg-slate-300 dark:hover:bg-white/20 text-slate-900 dark:text-white rounded-lg font-semibold transition-colors text-sm"
+                   >
+                     Sign Up
+                   </Link>
+                </div>
+             </div>
+          )}
           <div className="mt-2 flex items-center gap-1.5">
              <div className="w-2 h-2 rounded-full bg-slate-400 animate-pulse" />
              <span className="text-[11px] text-slate-500 italic">Sarah is typing...</span>

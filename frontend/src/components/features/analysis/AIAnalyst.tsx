@@ -35,7 +35,7 @@ const AIAnalyst: React.FC<AIAnalystProps> = ({ symbol, isLaymanMode }) => {
       const response = await axios.post(`/api/stock/${symbol}/analyze`);
       setAnalysis(response.data.analysis);
       setLaymanExplanation(null); // Reset explanation when new analysis comes
-      setChatHistory([]); // Reset chat when new analysis is generated
+      setChatHistory(prev => prev.length === 0 ? prev : []); // Reset chat when new analysis is generated
     } catch (error) {
       console.error("AI Analysis failed:", error);
     } finally {
@@ -89,8 +89,10 @@ const AIAnalyst: React.FC<AIAnalystProps> = ({ symbol, isLaymanMode }) => {
   };
 
   React.useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [chatHistory, analysis, laymanExplanation]);
+    if (chatHistory.length > 0) {
+      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [chatHistory]);
 
   // Auto-generate analysis on mount or symbol change
   React.useEffect(() => {

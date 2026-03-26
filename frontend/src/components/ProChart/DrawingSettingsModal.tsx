@@ -3,6 +3,63 @@ import { X, Pencil, FileText, ChevronDown, Save, Trash2 } from 'lucide-react';
 import type { DrawingToolsManager } from '@pipsend/charts';
 import { useChartObjects } from '../../store/useChartObjects';
 import { useTemplatePersistence } from '../../hooks/useTemplatePersistence';
+import { PremiumSelect, type Option } from '@/components/ui/PremiumSelect';
+
+const LINE_WIDTH_OPTIONS: Option[] = [
+  { value: '1', label: '1px' },
+  { value: '2', label: '2px' },
+  { value: '3', label: '3px' },
+  { value: '4', label: '4px' }
+];
+
+const LINE_STYLE_OPTIONS: Option[] = [
+  { value: 'solid', label: 'Solid' },
+  { value: 'dashed', label: 'Dashed' },
+  { value: 'dotted', label: 'Dotted' }
+];
+
+const EXTEND_OPTIONS: Option[] = [
+  { value: 'none', label: "Don't extend" },
+  { value: 'right', label: 'Extend right Line' },
+  { value: 'left', label: 'Extend left Line' },
+  { value: 'both', label: 'Extend both Lines' }
+];
+
+const STATS_MODE_OPTIONS: Option[] = [
+  { value: 'Hidden', label: 'Hidden' },
+  { value: 'Show', label: 'Show' }
+];
+
+const STATS_POS_OPTIONS: Option[] = [
+  { value: 'Right', label: 'Right' },
+  { value: 'Center', label: 'Center' },
+  { value: 'Left', label: 'Left' }
+];
+
+const FONT_SIZE_OPTIONS: Option[] = ['10','11','12','14','16','20','24','28','32','40'].map(s => ({ value: s, label: s }));
+
+const VALIGN_OPTIONS: Option[] = [
+  { value: 'Top', label: 'Top' },
+  { value: 'Middle', label: 'Middle' },
+  { value: 'Bottom', label: 'Bottom' }
+];
+
+const HALIGN_OPTIONS: Option[] = [
+  { value: 'Center', label: 'Center' },
+  { value: 'Left', label: 'Left' },
+  { value: 'Right', label: 'Right' }
+];
+
+const ORIENTATION_OPTIONS: Option[] = [
+  { value: 'horizontal', label: 'Horizontal' },
+  { value: 'parallel', label: 'Parallel' }
+];
+
+const TEXT_POS_OPTIONS: Option[] = [
+  { value: 'top', label: 'Top' },
+  { value: 'bottom', label: 'Bottom' },
+  { value: 'middle', label: 'Middle' }
+];
 
 export interface DrawingSettingsModalProps {
   isOpen: boolean;
@@ -278,33 +335,24 @@ export const DrawingSettingsModal: React.FC<DrawingSettingsModalProps> = ({
           {activeTab === 'Style' && (
             <div className="flex flex-col">
               <InputRow label="Line">
-                <div className="flex border border-gray-300 dark:border-[#2a2e39] rounded">
+                <div className="flex border border-gray-300 dark:border-[#2a2e39] rounded items-center">
                   <input type="color" value={color} onChange={e => setColor(e.target.value)} className="w-10 h-8 rounded-l cursor-pointer border-r border-gray-300 dark:border-[#2a2e39]" />
-                  <select value={lineWidth} onChange={e => setLineWidth(Number(e.target.value))} className="h-8 bg-transparent px-2 border-r border-gray-300 dark:border-[#2a2e39] outline-none cursor-pointer">
-                    <option value={1}>1px</option>
-                    <option value={2}>2px</option>
-                    <option value={3}>3px</option>
-                    <option value={4}>4px</option>
-                  </select>
-                  <select value={lineStyle} onChange={e => setLineStyle(e.target.value)} className="h-8 bg-transparent px-2 outline-none cursor-pointer">
-                    <option value="solid">Solid</option>
-                    <option value="dashed">Dashed</option>
-                    <option value="dotted">Dotted</option>
-                  </select>
+                  <div className="w-20 border-r border-gray-300 dark:border-[#2a2e39]">
+                    <PremiumSelect value={lineWidth.toString()} onChange={v => setLineWidth(Number(v))} options={LINE_WIDTH_OPTIONS} className="h-8 bg-transparent px-2 outline-none" dropdownClassName="min-w-[100px]" />
+                  </div>
+                  <div className="w-24">
+                    <PremiumSelect value={lineStyle} onChange={v => setLineStyle(v)} options={LINE_STYLE_OPTIONS} className="h-8 bg-transparent px-2 outline-none" dropdownClassName="min-w-[120px]" />
+                  </div>
                 </div>
               </InputRow>
               
               <InputRow label="Extend">
-                <select 
+                <PremiumSelect 
                   value={extendMode} 
-                  onChange={e => setExtendMode(e.target.value)}
-                  className="w-full h-8 border border-gray-300 dark:border-[#2a2e39] rounded bg-transparent px-2 outline-none cursor-pointer text-gray-800 dark:text-white"
-                >
-                  <option value="none">Don't extend</option>
-                  <option value="right">Extend right Line</option>
-                  <option value="left">Extend left Line</option>
-                  <option value="both">Extend both Lines</option>
-                </select>
+                  onChange={v => setExtendMode(v)}
+                  options={EXTEND_OPTIONS}
+                  className="w-full h-8 border border-gray-300 dark:border-[#2a2e39] rounded bg-transparent px-2 outline-none text-gray-800 dark:text-white"
+                />
               </InputRow>
 
               <div className="flex items-center gap-3 mt-2 mb-4 text-[13px] text-gray-800 dark:text-[#d1d4dc]">
@@ -320,18 +368,11 @@ export const DrawingSettingsModal: React.FC<DrawingSettingsModalProps> = ({
               <div className="text-[10px] text-gray-500 font-bold mb-3 uppercase tracking-wider">INFO</div>
               
               <InputRow label="Stats">
-                <select value={statsMode} onChange={e => setStatsMode(e.target.value)} className="w-full h-8 border border-gray-300 dark:border-[#2a2e39] rounded bg-transparent px-2 outline-none cursor-pointer">
-                  <option value="Hidden">Hidden</option>
-                  <option value="Show">Show</option>
-                </select>
+                <PremiumSelect value={statsMode} onChange={v => setStatsMode(v)} options={STATS_MODE_OPTIONS} className="w-full h-8 border border-gray-300 dark:border-[#2a2e39] rounded bg-transparent px-2 outline-none" dropdownClassName="min-w-[120px]" />
               </InputRow>
               
               <InputRow label="Stats position">
-                <select value={statsPosition} onChange={e => setStatsPosition(e.target.value)} className="w-full h-8 border border-gray-300 dark:border-[#2a2e39] rounded bg-transparent px-2 outline-none cursor-pointer">
-                  <option value="Right">Right</option>
-                  <option value="Center">Center</option>
-                  <option value="Left">Left</option>
-                </select>
+                <PremiumSelect value={statsPosition} onChange={v => setStatsPosition(v)} options={STATS_POS_OPTIONS} className="w-full h-8 border border-gray-300 dark:border-[#2a2e39] rounded bg-transparent px-2 outline-none" dropdownClassName="min-w-[120px]" />
               </InputRow>
               
               <div className="flex items-center gap-3 mt-2 text-[13px] text-gray-800 dark:text-[#d1d4dc]">
@@ -347,9 +388,9 @@ export const DrawingSettingsModal: React.FC<DrawingSettingsModalProps> = ({
                 <div className="border border-gray-300 dark:border-[#2a2e39] rounded h-8 overflow-hidden w-8">
                   <input type="color" value={textColor} onChange={e => setTextColor(e.target.value)} className="w-full h-full cursor-pointer" />
                 </div>
-                <select value={fontSize} onChange={e => setFontSize(e.target.value)} className="border border-gray-300 dark:border-[#2a2e39] rounded h-8 bg-transparent px-2 w-20 outline-none text-[13px] dark:text-white">
-                  {['10','11','12','14','16','20','24','28','32','40'].map(s => <option key={s} value={s}>{s}</option>)}
-                </select>
+                <div className="w-20 border border-gray-300 dark:border-[#2a2e39] rounded h-8 bg-transparent text-[13px] dark:text-white">
+                  <PremiumSelect value={fontSize} onChange={v => setFontSize(v)} options={FONT_SIZE_OPTIONS} className="w-full h-full px-2 outline-none" dropdownClassName="min-w-[100px]" />
+                </div>
                 <button 
                   onClick={() => setIsBold(!isBold)} 
                   className={`w-8 h-8 rounded flex items-center justify-center font-serif font-bold border transition-colors ${isBold ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 text-blue-600' : 'border-gray-300 dark:border-[#2a2e39] text-gray-700 dark:text-gray-300'}`}
@@ -368,31 +409,20 @@ export const DrawingSettingsModal: React.FC<DrawingSettingsModalProps> = ({
               />
               
               <InputRow label="Text alignment">
-                <select value={textVAlign} onChange={e => setTextVAlign(e.target.value)} className="w-1/2 h-8 border border-gray-300 dark:border-[#2a2e39] rounded bg-transparent px-2 outline-none text-[13px]">
-                  <option value="Top">Top</option>
-                  <option value="Middle">Middle</option>
-                  <option value="Bottom">Bottom</option>
-                </select>
-                <select value={textHAlign} onChange={e => setTextHAlign(e.target.value)} className="w-1/2 h-8 border border-gray-300 dark:border-[#2a2e39] rounded bg-transparent px-2 outline-none text-[13px]">
-                  <option value="Center">Center</option>
-                  <option value="Left">Left</option>
-                  <option value="Right">Right</option>
-                </select>
+                <div className="w-1/2">
+                  <PremiumSelect value={textVAlign} onChange={v => setTextVAlign(v)} options={VALIGN_OPTIONS} className="w-full h-8 border border-gray-300 dark:border-[#2a2e39] rounded bg-transparent px-2 outline-none text-[13px]" dropdownClassName="min-w-[100px]" />
+                </div>
+                <div className="w-1/2">
+                  <PremiumSelect value={textHAlign} onChange={v => setTextHAlign(v)} options={HALIGN_OPTIONS} className="w-full h-8 border border-gray-300 dark:border-[#2a2e39] rounded bg-transparent px-2 outline-none text-[13px]" dropdownClassName="min-w-[100px]" />
+                </div>
               </InputRow>
 
               <InputRow label="Text orientation">
-                <select value={textOrientation} onChange={e => setTextOrientation(e.target.value)} className="w-full h-8 border border-gray-300 dark:border-[#2a2e39] rounded bg-transparent px-2 outline-none text-[13px]">
-                  <option value="horizontal">Horizontal</option>
-                  <option value="parallel">Parallel</option>
-                </select>
+                <PremiumSelect value={textOrientation} onChange={v => setTextOrientation(v)} options={ORIENTATION_OPTIONS} className="w-full h-8 border border-gray-300 dark:border-[#2a2e39] rounded bg-transparent px-2 outline-none text-[13px]" dropdownClassName="min-w-[140px]" />
               </InputRow>
               
               <InputRow label="Text position">
-                <select value={textPosition} onChange={e => setTextPosition(e.target.value)} className="w-full h-8 border border-gray-300 dark:border-[#2a2e39] rounded bg-transparent px-2 outline-none text-[13px]">
-                  <option value="top">Top</option>
-                  <option value="bottom">Bottom</option>
-                  <option value="middle">Middle</option>
-                </select>
+                <PremiumSelect value={textPosition} onChange={v => setTextPosition(v)} options={TEXT_POS_OPTIONS} className="w-full h-8 border border-gray-300 dark:border-[#2a2e39] rounded bg-transparent px-2 outline-none text-[13px]" dropdownClassName="min-w-[120px]" />
               </InputRow>
             </div>
           )}

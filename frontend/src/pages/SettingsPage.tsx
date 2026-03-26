@@ -1,11 +1,13 @@
 import { Activity, AlertCircle, Moon, Sun, Monitor } from 'lucide-react';
 import { useGame } from '../hooks/useGame';
 import { useTheme } from '../context/ThemeContext';
+import { useThemeStore } from '../store/themeStore';
 import { Button } from '@/components/ui/button';
 
 const SettingsPage = () => {
   const { speed, setSpeed, resetSimulation, userSettings, updateUserSettings } = useGame();
-  const { theme, setTheme } = useTheme();
+  const { theme, setTheme } = useTheme(); // provides system option + delegates to themeStore
+  const { theme: storeTheme } = useThemeStore(); // actual resolved theme for active button highlight
 
   return (
     <div className="p-8 w-full max-w-2xl mx-auto font-sans">
@@ -20,21 +22,21 @@ const SettingsPage = () => {
           </div>
           <div className="flex gap-2">
             <Button
-              variant={theme === 'light' ? 'default' : 'outline'}
+              variant={storeTheme === 'light' ? 'default' : 'outline'}
               onClick={() => setTheme('light')}
               className="flex-1 gap-2"
             >
               <Sun size={16} /> Light
             </Button>
             <Button
-              variant={theme === 'dark' ? 'default' : 'outline'}
+              variant={storeTheme === 'dark' ? 'default' : 'outline'}
               onClick={() => setTheme('dark')}
               className="flex-1 gap-2"
             >
               <Moon size={16} /> Dark
             </Button>
             <Button
-              variant={theme === 'system' ? 'default' : 'outline'}
+              variant={'outline'}
               onClick={() => setTheme('system')}
               className="flex-1 gap-2"
             >

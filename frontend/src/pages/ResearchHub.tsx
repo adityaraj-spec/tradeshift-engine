@@ -64,7 +64,7 @@ const ResearchHub: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen dark:bg-[#050505] dark:text-gray-100 light:bg-gray-100 relative overflow-hidden font-sans pb-12">
+    <div className="min-h-screen dark:bg-[#050505] dark:text-gray-100 light:bg-gray-100 relative font-sans pb-12">
       {/* Dynamic Background */}
       <div className="absolute top-0 inset-x-0 h-[500px] w-full bg-gradient-to-b from-primary/10 via-blue-500/5 to-transparent pointer-events-none"></div>
       <div className="absolute -top-[300px] -right-[200px] w-[600px] h-[600px] bg-primary/20 rounded-full blur-[120px] pointer-events-none"></div>

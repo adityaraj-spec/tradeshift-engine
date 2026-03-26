@@ -3,6 +3,20 @@ import { X, Info, ChevronDown } from 'lucide-react';
 import { useAlerts } from '../../store/useAlerts';
 import type { AlertCondition, AlertTrigger } from '../../store/useAlerts';
 import { toast } from 'sonner';
+import { PremiumSelect, type Option } from '@/components/ui/PremiumSelect';
+
+const CONDITION_1_OPTIONS: Option[] = [{ value: 'Price', label: 'Price' }];
+const CONDITION_OPTIONS: Option[] = [
+  { value: 'crossing', label: 'Crossing' },
+  { value: 'crossing_up', label: 'Crossing Up' },
+  { value: 'crossing_down', label: 'Crossing Down' },
+  { value: 'greater_than', label: 'Greater Than' },
+  { value: 'less_than', label: 'Less Than' }
+];
+const TRIGGER_OPTIONS: Option[] = [
+  { value: 'once', label: 'Once only' },
+  { value: 'every_time', label: 'Every time' }
+];
 
 interface AlertDialogProps {
   isOpen: boolean;
@@ -78,31 +92,32 @@ export const AlertDialog: React.FC<AlertDialogProps> = ({
           <div className="space-y-3">
              <label className="text-sm font-medium text-[#d1d4dc]">Condition</label>
              <div className="grid grid-cols-1 gap-2">
-                <select 
-                  className="w-full bg-[#131722] border border-[#2a2e39] rounded px-3 py-2 text-white text-sm focus:outline-none focus:border-blue-500 transition-colors cursor-pointer appearance-none"
+                <PremiumSelect
                   value="Price"
-                  disabled
-                >
-                  <option>Price</option>
-                </select>
+                  onChange={() => {}}
+                  options={CONDITION_1_OPTIONS}
+                  className="w-full bg-[#131722] border border-[#2a2e39] rounded px-3 py-2 text-white text-sm focus:outline-none focus:border-blue-500 transition-colors"
+                />
                 
                 <div className="flex gap-2">
-                  <select 
-                    className="flex-[2] bg-[#131722] border border-[#2a2e39] rounded px-3 py-2 text-white text-sm focus:outline-none focus:border-blue-500 transition-colors cursor-pointer"
+                <div className="flex-[2]">
+                  <PremiumSelect
                     value={condition}
-                    onChange={(e) => setCondition(e.target.value as AlertCondition)}
-                  >
-                    <option value="crossing">Crossing</option>
-                    <option value="crossing_up">Crossing Up</option>
-                    <option value="crossing_down">Crossing Down</option>
-                    <option value="greater_than">Greater Than</option>
-                    <option value="less_than">Less Than</option>
-                  </select>
+                    onChange={(v) => setCondition(v as AlertCondition)}
+                    options={CONDITION_OPTIONS}
+                    className="w-full bg-[#131722] border border-[#2a2e39] rounded px-3 py-2 text-white text-sm focus:outline-none focus:border-blue-500 transition-colors"
+                  />
+                </div>
                   
                   <div className="flex-[3] flex gap-1">
-                    <select className="bg-[#131722] border border-[#2a2e39] rounded px-3 py-2 text-white text-sm focus:outline-none focus:border-blue-500 min-w-[80px]" disabled value="Value">
-                      <option>Value</option>
-                    </select>
+                    <div className="min-w-[80px]">
+                      <PremiumSelect
+                        value="Value"
+                        onChange={() => {}}
+                        options={[{ value: 'Value', label: 'Value' }]}
+                        className="w-full bg-[#131722] border border-[#2a2e39] rounded px-3 py-2 text-white text-sm focus:outline-none focus:border-blue-500"
+                      />
+                    </div>
                     <input 
                       type="number"
                       step="0.01"
@@ -127,17 +142,12 @@ export const AlertDialog: React.FC<AlertDialogProps> = ({
             <div className="space-y-1.5">
               <label className="text-sm font-medium text-[#d1d4dc]">Trigger</label>
               <div className="relative">
-                <select 
-                  className="w-full bg-transparent border-none text-white text-sm focus:outline-none cursor-pointer pr-8"
+                <PremiumSelect
                   value={trigger}
-                  onChange={(e) => setTrigger(e.target.value as AlertTrigger)}
-                >
-                  <option value="once">Once only</option>
-                  <option value="every_time">Every time</option>
-                </select>
-                <div className="absolute right-0 top-1/2 -translate-y-1/2 pointer-events-none text-[#5d606b]">
-                   <ChevronDown size={14} />
-                </div>
+                  onChange={(v) => setTrigger(v as AlertTrigger)}
+                  options={TRIGGER_OPTIONS}
+                  className="w-full bg-transparent border-none text-white text-sm focus:outline-none"
+                />
               </div>
             </div>
 

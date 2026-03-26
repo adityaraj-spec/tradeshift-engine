@@ -1,6 +1,20 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { X, HelpCircle, ChevronRight, LayoutGrid } from 'lucide-react';
 import { useGame } from '../../hooks/useGame';
+import { PremiumSelect, type Option } from '@/components/ui/PremiumSelect';
+
+const CONDITION_1_OPTIONS: Option[] = [{ value: 'Price', label: 'Price' }];
+const CONDITION_2_OPTIONS: Option[] = [{ value: 'Crossing', label: 'Crossing' }];
+const TRIGGER_OPTIONS: Option[] = [
+  { value: 'Once only', label: 'Once only' },
+  { value: 'Once per bar', label: 'Once per bar' },
+  { value: 'Once per bar close', label: 'Once per bar close' },
+  { value: 'Once per minute', label: 'Once per minute' }
+];
+const EXPIRATION_OPTIONS: Option[] = [
+  { value: 'April 18, 2026 at 03:02', label: 'April 18, 2026 at 03:02' },
+  { value: 'Open-ended', label: 'Open-ended' }
+];
 
 interface DrawingAlertModalProps {
   isOpen: boolean;
@@ -11,6 +25,18 @@ interface DrawingAlertModalProps {
 export const DrawingAlertModal: React.FC<DrawingAlertModalProps> = ({ isOpen, onClose, toolDetails = 'ray' }) => {
   const { selectedSymbol } = useGame();
   
+  const [cond1, setCond1] = useState('Price');
+  const [cond2, setCond2] = useState('Crossing');
+  const [cond3, setCond3] = useState(toolDetails);
+  const [trigger, setTrigger] = useState('Once only');
+  const [expiration, setExpiration] = useState('Open-ended');
+
+  // Keep cond3 options dynamic based on toolDetails
+  const CONDITION_3_OPTIONS: Option[] = [
+    { value: toolDetails, label: toolDetails },
+    { value: 'Value', label: 'Value' }
+  ];
+
   if (!isOpen) return null;
 
   const symbolText = selectedSymbol || 'NIFTY1!';
@@ -45,28 +71,33 @@ export const DrawingAlertModal: React.FC<DrawingAlertModalProps> = ({ isOpen, on
             <div className="w-[100px] text-gray-500 pt-2 shrink-0">Condition</div>
             <div className="flex-1 space-y-2">
               <div className="relative">
-                <select className="w-full appearance-none bg-white dark:bg-[#2a2e39] border border-gray-300 dark:border-gray-600 rounded px-3 py-2 outline-none focus:border-blue-500">
-                  <option>Price</option>
-                </select>
-                <span className="absolute right-3 top-1/2 -translate-y-1/2 opacity-50 pointer-events-none text-xs">▼</span>
+                <PremiumSelect
+                  value={cond1}
+                  onChange={setCond1}
+                  options={CONDITION_1_OPTIONS}
+                  className="w-full bg-white dark:bg-[#2a2e39] border border-gray-300 dark:border-gray-600 rounded px-3 py-2 outline-none focus:border-blue-500"
+                />
               </div>
               
               <div className="relative">
-                <select className="w-full appearance-none bg-white dark:bg-[#2a2e39] border border-gray-300 dark:border-gray-600 rounded px-3 py-2 pl-9 outline-none focus:border-blue-500">
-                  <option>Crossing</option>
-                </select>
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 opacity-50 pointer-events-none flex py-1">
-                 <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12.5 1.5L1.5 12.5M1.5 1.5L12.5 12.5" stroke="currentColor" strokeWidth="1.5"/></svg>
-                </span>
-                <span className="absolute right-3 top-1/2 -translate-y-1/2 opacity-50 pointer-events-none text-xs">▼</span>
+                <div className="absolute left-3 top-1/2 -translate-y-1/2 opacity-50 pointer-events-none flex z-10 w-4 h-4 text-white">
+                  <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12.5 1.5L1.5 12.5M1.5 1.5L12.5 12.5" stroke="currentColor" strokeWidth="1.5"/></svg>
+                </div>
+                <PremiumSelect
+                  value={cond2}
+                  onChange={setCond2}
+                  options={CONDITION_2_OPTIONS}
+                  className="w-full bg-white dark:bg-[#2a2e39] border border-gray-300 dark:border-gray-600 rounded px-3 py-2 pl-9 outline-none focus:border-blue-500"
+                />
               </div>
 
               <div className="relative">
-                <select className="w-full appearance-none bg-white dark:bg-[#2a2e39] border border-gray-300 dark:border-gray-600 rounded px-3 py-2 outline-none focus:border-blue-500">
-                  <option>{toolDetails}</option>
-                  <option>Value</option>
-                </select>
-                <span className="absolute right-3 top-1/2 -translate-y-1/2 opacity-50 pointer-events-none text-xs">▼</span>
+                <PremiumSelect
+                  value={cond3}
+                  onChange={setCond3}
+                  options={CONDITION_3_OPTIONS}
+                  className="w-full bg-white dark:bg-[#2a2e39] border border-gray-300 dark:border-gray-600 rounded px-3 py-2 outline-none focus:border-blue-500"
+                />
               </div>
 
               <button className="flex items-center gap-1.5 text-blue-600 hover:text-blue-700 py-1 font-medium">
@@ -80,26 +111,26 @@ export const DrawingAlertModal: React.FC<DrawingAlertModalProps> = ({ isOpen, on
           {/* Trigger */}
           <div className="flex items-center gap-4">
             <div className="w-[100px] text-gray-500 shrink-0">Trigger</div>
-            <div className="flex-1 relative">
-              <select className="w-full appearance-none bg-transparent outline-none py-1 border-none font-medium cursor-pointer">
-                <option>Once only</option>
-                <option>Once per bar</option>
-                <option>Once per bar close</option>
-                <option>Once per minute</option>
-              </select>
-              <span className="absolute right-0 top-1/2 -translate-y-1/2 opacity-50 pointer-events-none text-xs">▼</span>
+            <div className="flex-1 relative z-40">
+              <PremiumSelect
+                value={trigger}
+                onChange={setTrigger}
+                options={TRIGGER_OPTIONS}
+                className="w-full bg-transparent outline-none py-1 border-none font-medium text-[13px]"
+              />
             </div>
           </div>
 
           {/* Expiration */}
           <div className="flex items-center gap-4">
             <div className="w-[100px] text-gray-500 shrink-0">Expiration</div>
-            <div className="flex-1 relative">
-              <select className="w-full appearance-none bg-transparent outline-none py-1 border-none font-medium cursor-pointer">
-                <option>April 18, 2026 at 03:02</option>
-                <option>Open-ended</option>
-              </select>
-              <span className="absolute right-0 top-1/2 -translate-y-1/2 opacity-50 pointer-events-none text-xs">▼</span>
+            <div className="flex-1 flex gap-2 relative z-30">
+              <PremiumSelect
+                value={expiration}
+                onChange={setExpiration}
+                options={EXPIRATION_OPTIONS}
+                className="w-full bg-transparent outline-none py-1 border-none font-medium text-[13px]"
+              />
             </div>
           </div>
 

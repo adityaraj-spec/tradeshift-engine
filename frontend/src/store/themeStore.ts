@@ -9,18 +9,47 @@ interface ThemeState {
     setTheme: (theme: Theme) => void;
 }
 
+// Apply the theme class immediately before React hydrates
+// This eliminates the flash of wrong theme on page load
+const applyThemeToDOM = (theme: Theme) => {
+    const root = window.document.documentElement;
+    root.classList.remove('light', 'dark');
+    root.classList.add(theme);
+    root.style.colorScheme = theme;
+};
+
+// Read persisted theme from localStorage synchronously and apply immediately
+// So there is zero flash — the correct class is present before first paint
+const getInitialTheme = (): Theme => {
+    try {
+        const stored = localStorage.getItem('trade-sim-theme');
+        if (stored) {
+            const parsed = JSON.parse(stored);
+            const savedTheme = parsed?.state?.theme as Theme;
+            if (savedTheme === 'light' || savedTheme === 'dark') {
+                applyThemeToDOM(savedTheme);
+                return savedTheme;
+            }
+        }
+    } catch {
+        // If parsing fails, fall through to default
+    }
+    applyThemeToDOM('dark');
+    return 'dark';
+};
+
 export const useThemeStore = create<ThemeState>()(
     persist(
         (set) => ({
-            theme: 'dark', // Default to dark execution
+            theme: getInitialTheme(),
             toggleTheme: () =>
                 set((state) => {
                     const newTheme = state.theme === 'light' ? 'dark' : 'light';
-                    updateDomClass(newTheme);
+                    applyThemeToDOM(newTheme);
                     return { theme: newTheme };
                 }),
             setTheme: (theme) => {
-                updateDomClass(theme);
+                applyThemeToDOM(theme);
                 set({ theme });
             },
         }),
@@ -28,17 +57,9 @@ export const useThemeStore = create<ThemeState>()(
             name: 'trade-sim-theme',
             onRehydrateStorage: () => (state) => {
                 if (state) {
-                    updateDomClass(state.theme);
+                    applyThemeToDOM(state.theme);
                 }
-            }
+            },
         }
     )
 );
-
-// Helper to update the HTML class
-const updateDomClass = (theme: Theme) => {
-    const root = window.document.documentElement;
-    root.classList.remove('light', 'dark');
-    root.classList.add(theme);
-    root.style.colorScheme = theme;
-};

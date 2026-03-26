@@ -14,7 +14,7 @@ const Topbar = () => {
   const { activeChartId } = useMultiChartStore();
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
-  const { user, logout } = useAuth();
+  const { user, loading, logout } = useAuth();
   const navigate = useNavigate();
 
   const handleLogout = async () => {
@@ -85,7 +85,12 @@ const Topbar = () => {
         <div className="h-6 w-[1px] bg-tv-border"></div>
 
         {/* AUTH SECTION */}
-        {user ? (
+        {loading ? (
+          <div className="flex items-center gap-3">
+            <div className="w-12 h-6 animate-pulse bg-slate-200 dark:bg-white/5 rounded"></div>
+            <div className="w-20 h-8 animate-pulse bg-slate-200 dark:bg-white/5 rounded-full"></div>
+          </div>
+        ) : user ? (
           <div className="relative">
             <button 
               onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}

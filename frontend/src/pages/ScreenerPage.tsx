@@ -18,6 +18,14 @@ import { Button } from '@/components/ui/button';
 import TradingViewWidget from '@/components/ui/TradingViewWidget';
 import { SCREENER_WIDGET_CONFIG } from '@/lib/constants';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { PremiumSelect } from '@/components/ui/PremiumSelect';
+
+const SORT_OPTIONS = [
+  { value: 'conviction_score', label: 'FinGPT Conviction' },
+  { value: 'roce', label: 'Efficiency (ROCE)' },
+  { value: 'revenue_growth', label: 'Growth Rate' },
+  { value: 'market_cap', label: 'Market Size' }
+];
 
 interface Candidate {
   symbol: string;
@@ -145,11 +153,11 @@ const ScreenerPage: React.FC = () => {
 
       <Tabs defaultValue="multibagger" className="w-full">
         <TabsList className="bg-gray-100 dark:bg-black/40 border border-gray-200 dark:border-white/10 p-1 mb-8 m-3">
-          <TabsTrigger value="multibagger" className="data-[state=active]:bg-primary data-[state=active]:text-gray-900 dark:data-[state=active]:text-gray-500 hover:text-gray-900 dark:hover:text-white text-gray-600 dark:text-gray-400 font-bold">
+          <TabsTrigger value="multibagger" className="data-[state=active]:bg-green-600 data-[state=active]:text-white hover:text-gray-900 dark:hover:text-white text-gray-600 dark:text-gray-400 font-bold">
             <Zap className="w-4 h-4 mr-2" />
             Multibagger Academy
           </TabsTrigger>
-          <TabsTrigger value="pro" className="data-[state=active]:bg-primary data-[state=active]:text-gray-900 dark:data-[state=active]:text-gray-500 hover:text-gray-900 dark:hover:text-white text-gray-600 dark:text-gray-400 font-bold">
+          <TabsTrigger value="pro" className="data-[state=active]:bg-green-600 data-[state=active]:text-white hover:text-gray-900 dark:hover:text-white text-gray-600 dark:text-gray-400 font-bold">
             <Filter className="w-4 h-4 mr-2" />
             Professional Screener
           </TabsTrigger>
@@ -185,17 +193,13 @@ const ScreenerPage: React.FC = () => {
               </div>
 
               <div className="flex items-center gap-3 bg-gray-50 dark:bg-black/20 p-2 rounded-xl border border-gray-200 dark:border-white/5">
-                <span className="text-[12px] uppercase font-black text-gray-500 tracking-tighter pl-2">Sort By:</span>
-                <select
+                <span className="text-[12px] uppercase font-black text-gray-500 tracking-tighter pl-2 shrink-0">Sort By:</span>
+                <PremiumSelect
                   value={sortBy}
-                  onChange={(e) => setSortBy(e.target.value as keyof Candidate)}
-                  className="bg-transparent text-sm font-bold text-gray-900 dark:text-white border-none focus:ring-0 cursor-pointer outline-none"
-                >
-                  <option value="conviction_score" className="bg-white dark:bg-[#121212] text-gray-900 dark:text-white">FinGPT Conviction</option>
-                  <option value="roce" className="bg-white dark:bg-[#121212] text-gray-900 dark:text-white">Efficiency (ROCE)</option>
-                  <option value="revenue_growth" className="bg-white dark:bg-[#121212] text-gray-900 dark:text-white">Growth Rate</option>
-                  <option value="market_cap" className="bg-white dark:bg-[#121212] text-gray-900 dark:text-white">Market Size</option>
-                </select>
+                  onChange={(val) => setSortBy(val as keyof Candidate)}
+                  options={SORT_OPTIONS}
+                  className="bg-transparent text-sm font-bold text-gray-900 dark:text-white border-none focus:ring-0 cursor-pointer outline-none w-32"
+                />
               </div>
             </div>
           </div>

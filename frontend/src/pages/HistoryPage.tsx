@@ -5,7 +5,8 @@ import {
   Clock, Target, RefreshCw, AlertCircle, Award, Briefcase, FileText, ChevronLeft, ChevronRight
 } from 'lucide-react';
 import { useGame } from '../context/GameContext';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
+import { PremiumDatePicker } from '@/components/ui/PremiumDatePicker';
+import { PremiumSelect, type Option } from '@/components/ui/PremiumSelect';
 
 const api = axios.create({ baseURL: '', withCredentials: true });
 
@@ -182,55 +183,47 @@ export default function HistoryPage() {
           
           <div className="w-full md:w-48 space-y-1.5">
             <label className="text-xs font-bold text-gray-500 dark:text-muted-foreground uppercase tracking-wider">Symbol</label>
-            <Select 
+            <PremiumSelect 
               value={filters.symbol || "all"}
-              onValueChange={val => { setFilters(f => ({...f, symbol: val === "all" ? "" : val})); setPage(1); }}
-            >
-              <SelectTrigger className="w-full bg-white dark:bg-[#1e1e1e] border border-gray-200 dark:border-[#2e2e2e] rounded-lg h-[38px] px-4 text-sm text-gray-900 dark:text-white focus-visible:ring-1 focus-visible:ring-sidebar-primary focus-visible:ring-offset-0 focus:outline-none focus:border-sidebar-primary cursor-pointer">
-                <SelectValue placeholder="All Symbols" />
-              </SelectTrigger>
-              <SelectContent position="popper" sideOffset={4} className="bg-white dark:bg-[#1e1e1e] border border-gray-200 dark:border-white/5 rounded-xl shadow-lg dark:shadow-[0_4px_20px_-5px_rgba(0,0,0,0.5)]">
-                <SelectItem value="all" className="cursor-pointer text-sm font-medium focus:bg-gray-100 dark:focus:bg-white/10 dark:text-gray-300 dark:focus:text-white rounded-md my-0.5">All Symbols</SelectItem>
-                {symbols.map(s => <SelectItem key={s} value={s} className="cursor-pointer text-sm font-medium focus:bg-gray-100 dark:focus:bg-white/10 dark:text-gray-300 dark:focus:text-white rounded-md my-0.5">{s}</SelectItem>)}
-              </SelectContent>
-            </Select>
+              onChange={val => { setFilters(f => ({...f, symbol: val === "all" ? "" : val})); setPage(1); }}
+              options={[
+                { value: 'all', label: 'All Symbols' },
+                ...symbols.map(s => ({ value: s, label: s }))
+              ]}
+              className="bg-white dark:bg-[#1e1e1e] border border-gray-200 dark:border-[#2e2e2e] rounded-lg px-4 py-2 text-sm text-gray-900 dark:text-white"
+            />
           </div>
 
           <div className="w-full md:w-36 space-y-1.5">
             <label className="text-xs font-bold text-gray-500 dark:text-muted-foreground uppercase tracking-wider">Direction</label>
-            <Select 
+            <PremiumSelect 
               value={filters.direction || "all"}
-              onValueChange={val => { setFilters(f => ({...f, direction: val === "all" ? "" : val})); setPage(1); }}
-            >
-              <SelectTrigger className="w-full bg-white dark:bg-[#1e1e1e] border border-gray-200 dark:border-[#2e2e2e] rounded-lg h-[38px] px-4 text-sm text-gray-900 dark:text-white focus-visible:ring-1 focus-visible:ring-sidebar-primary focus-visible:ring-offset-0 focus:outline-none focus:border-sidebar-primary cursor-pointer">
-                <SelectValue placeholder="All" />
-              </SelectTrigger>
-              <SelectContent position="popper" sideOffset={4} className="bg-white dark:bg-[#1e1e1e] border border-gray-200 dark:border-white/5 rounded-xl shadow-lg dark:shadow-[0_4px_20px_-5px_rgba(0,0,0,0.5)]">
-                <SelectItem value="all" className="cursor-pointer text-sm font-medium focus:bg-gray-100 dark:focus:bg-white/10 dark:text-gray-300 dark:focus:text-white rounded-md my-0.5">All</SelectItem>
-                <SelectItem value="BUY" className="cursor-pointer text-sm font-medium focus:bg-gray-100 dark:focus:bg-white/10 dark:text-gray-300 dark:focus:text-white rounded-md my-0.5">Long (BUY)</SelectItem>
-                <SelectItem value="SELL" className="cursor-pointer text-sm font-medium focus:bg-gray-100 dark:focus:bg-white/10 dark:text-gray-300 dark:focus:text-white rounded-md my-0.5">Short (SELL)</SelectItem>
-              </SelectContent>
-            </Select>
+              onChange={val => { setFilters(f => ({...f, direction: val === "all" ? "" : val})); setPage(1); }}
+              options={[
+                { value: 'all', label: 'All' },
+                { value: 'BUY', label: 'Long (BUY)' },
+                { value: 'SELL', label: 'Short (SELL)' }
+              ]}
+              className="bg-white dark:bg-[#1e1e1e] border border-gray-200 dark:border-[#2e2e2e] rounded-lg px-4 py-2 text-sm text-gray-900 dark:text-white"
+            />
           </div>
 
           <div className="flex items-center gap-2">
-            <div className="w-full md:w-40 space-y-1.5">
+            <div className="w-full md:w-48 space-y-1.5">
               <label className="text-xs font-bold text-gray-500 dark:text-muted-foreground uppercase tracking-wider">From Date</label>
-              <input 
-                type="date" 
-                className="w-full bg-white dark:bg-[#1e1e1e] border border-gray-200 dark:border-[#2e2e2e] rounded-lg px-3 py-2 text-sm text-gray-900 dark:text-white focus:outline-none focus:border-sidebar-primary color-scheme-dark"
+              <PremiumDatePicker 
                 value={filters.dateFrom}
-                onChange={e => { setFilters(f => ({...f, dateFrom: e.target.value})); setPage(1); }}
+                onChange={val => { setFilters(f => ({...f, dateFrom: val})); setPage(1); }}
+                placeholder="From"
               />
             </div>
-            <div className="mt-6 text-gray-500 dark:text-muted-foreground">-</div>
-            <div className="w-full md:w-40 space-y-1.5">
+            <div className="mt-8 text-gray-500 dark:text-muted-foreground">to</div>
+            <div className="w-full md:w-48 space-y-1.5">
               <label className="text-xs font-bold text-gray-500 dark:text-muted-foreground uppercase tracking-wider">To Date</label>
-              <input 
-                type="date" 
-                className="w-full bg-white dark:bg-[#1e1e1e] border border-gray-200 dark:border-[#2e2e2e] rounded-lg px-3 py-2 text-sm text-gray-900 dark:text-white focus:outline-none focus:border-sidebar-primary color-scheme-dark"
+              <PremiumDatePicker 
                 value={filters.dateTo}
-                onChange={e => { setFilters(f => ({...f, dateTo: e.target.value})); setPage(1); }}
+                onChange={val => { setFilters(f => ({...f, dateTo: val})); setPage(1); }}
+                placeholder="To"
               />
             </div>
           </div>

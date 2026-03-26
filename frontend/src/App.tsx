@@ -6,6 +6,7 @@ import { ChatBot } from './components/ChatBot/ChatBot';
 import { AuthProvider } from './context/AuthContext';
 import Login from './pages/auth/Login';
 import Signup from './pages/auth/Signup';
+import PinVerification from './pages/auth/PinVerification';
 
 import Layout from './components/layout/layout';
 import Home from './pages/Home';
@@ -39,6 +40,7 @@ export default function App() {
               <Route path="/" element={<Navigate to="/home1" replace />} />
               <Route path="/login" element={<Login />} />
               <Route path="/signup" element={<Signup />} />
+              <Route path="/pin-verify" element={<PinVerification />} />
 
             <Route element={<Layout />}>
               <Route path="trade" element={<Home />} />

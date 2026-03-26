@@ -3,6 +3,14 @@ import { useGame } from '../../hooks/useGame';
 import { useMultiChartStore } from '../../store/useMultiChartStore';
 import { X, ChevronDown, Bell, BellOff, TrendingUp, TrendingDown, Info } from 'lucide-react';
 import { toast } from 'sonner';
+import { PremiumSelect } from '@/components/ui/PremiumSelect';
+
+const ORDER_TYPE_OPTIONS = [
+  { value: 'MARKET', label: 'MARKET' },
+  { value: 'LIMIT', label: 'LIMIT' },
+  { value: 'STOP', label: 'STOP' },
+  { value: 'GTT', label: 'GTT' }
+];
 
 export interface OrderData {
   symbol: string;
@@ -188,17 +196,12 @@ const TradePanel = ({ price, onExecute, onClose }: TradePanelProps) => {
                   <div className="space-y-2">
                     <label className="text-[10px] font-black text-white/40 uppercase tracking-[0.2em] px-1">Type</label>
                     <div className="relative">
-                      <select 
+                      <PremiumSelect 
                         value={orderType}
-                        onChange={(e) => setOrderType(e.target.value as any)}
-                        className="w-full h-14 bg-white/5 border border-white/10 rounded-xl px-4 text-white font-bold text-sm appearance-none focus:outline-none focus:border-white/20 transition-colors"
-                      >
-                        <option value="MARKET">MARKET</option>
-                        <option value="LIMIT">LIMIT</option>
-                        <option value="STOP">STOP</option>
-                        <option value="GTT">GTT</option>
-                      </select>
-                      <ChevronDown size={16} className="absolute right-4 top-1/2 -translate-y-1/2 text-white/30 pointer-events-none" />
+                        onChange={(val) => setOrderType(val as any)}
+                        options={ORDER_TYPE_OPTIONS}
+                        className="w-full h-14 bg-white/5 border border-white/10 rounded-xl px-4 text-white font-bold text-sm focus:outline-none focus:border-white/20 transition-colors"
+                      />
                     </div>
                   </div>
                   

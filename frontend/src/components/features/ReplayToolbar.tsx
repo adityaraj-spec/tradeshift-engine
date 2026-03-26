@@ -2,6 +2,7 @@ import { Play, Pause, SkipForward, Calendar, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useGame } from '../../hooks/useGame';
 import { marketDataService } from '../../services/MarketDataService';
+import { PremiumSelect } from '@/components/ui/PremiumSelect';
 
 const ReplayToolbar = () => {
     const { 
@@ -52,15 +53,15 @@ const ReplayToolbar = () => {
             {/* Date Selector */}
             <div className="flex items-center gap-2 px-1">
                 <Calendar size={14} className="text-[#d1d4dc]/40" />
-                <select 
-                    className="bg-transparent border-none text-xs font-bold text-[#d1d4dc] outline-none cursor-pointer hover:text-blue-500 transition-colors"
-                    value={selectedDate}
-                    onChange={(e) => setDate(e.target.value)}
-                >
-                    {availableDates.map(d => (
-                        <option key={d} value={d} className="bg-[#1e222d] text-[#d1d4dc]">{d}</option>
-                    ))}
-                </select>
+                <div className="w-[120px]">
+                    <PremiumSelect
+                        value={selectedDate}
+                        onChange={setDate}
+                        options={availableDates.map(d => ({ value: d, label: d }))}
+                        className="bg-transparent border-none text-xs font-bold text-[#d1d4dc] outline-none hover:text-blue-500 transition-colors"
+                        dropdownClassName="min-w-[120px]"
+                    />
+                </div>
             </div>
 
             {/* Close Button */}

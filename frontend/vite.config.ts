@@ -21,7 +21,7 @@ export default defineConfig({
         changeOrigin: true,
       },
       '/api/chat': {
-        target: 'http://localhost:8001',
+        target: 'http://chatbot:8001',
         changeOrigin: true,
         secure: false,
         timeout: 30000,

@@ -1,54 +1,42 @@
-import { createContext, useContext, useEffect, useState } from "react";
+/**
+ * ThemeContext — thin bridge so that SettingsPage (which uses useTheme)
+ * and Header (which uses useThemeStore) both read/write the SAME store.
+ *
+ * All state lives in themeStore (Zustand + persist). This context just
+ * adapts the "system" option from SettingsPage: when the user picks
+ * "system" we resolve it to the OS preference and forward it to the store.
+ */
+import { createContext, useContext } from "react";
+import { useThemeStore } from "../store/themeStore";
 
 type Theme = "dark" | "light" | "system";
-
-type ThemeProviderProps = {
-    children: React.ReactNode;
-    defaultTheme?: Theme;
-    storageKey?: string;
-};
 
 type ThemeProviderState = {
     theme: Theme;
     setTheme: (theme: Theme) => void;
 };
 
-const initialState: ThemeProviderState = {
-    theme: "system",
+const ThemeProviderContext = createContext<ThemeProviderState>({
+    theme: "dark",
     setTheme: () => null,
-};
+});
 
-const ThemeProviderContext = createContext<ThemeProviderState>(initialState);
+export function ThemeProvider({ children }: { children: React.ReactNode }) {
+    const { theme, setTheme } = useThemeStore();
 
-export function ThemeProvider({
-    children,
-    defaultTheme = "system",
-    storageKey = "vite-ui-theme",
-}: ThemeProviderProps) {
-    const [theme, setTheme] = useState<Theme>(
-        () => (localStorage.getItem(storageKey) as Theme) || defaultTheme
-    );
-
-    useEffect(() => {
-        const root = window.document.documentElement;
-
-        root.classList.remove("light", "dark");
-
-        if (theme === "system") {
-            const systemTheme = window.matchMedia("(prefers-color-scheme: dark)")
-                .matches
+    const handleSetTheme = (t: Theme) => {
+        if (t === "system") {
+            const systemTheme = window.matchMedia("(prefers-color-scheme: dark)").matches
                 ? "dark"
                 : "light";
-
-            root.classList.add(systemTheme);
-            return;
+            setTheme(systemTheme);
+        } else {
+            setTheme(t);
         }
-
-        root.classList.add(theme);
-    }, [theme]);
+    };
 
     return (
-        <ThemeProviderContext.Provider value={{ theme, setTheme }}>
+        <ThemeProviderContext.Provider value={{ theme, setTheme: handleSetTheme }}>
             {children}
         </ThemeProviderContext.Provider>
     );
@@ -56,9 +44,7 @@ export function ThemeProvider({
 
 export const useTheme = () => {
     const context = useContext(ThemeProviderContext);
-
     if (context === undefined)
         throw new Error("useTheme must be used within a ThemeProvider");
-
     return context;
 };

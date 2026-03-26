@@ -34,7 +34,9 @@ export const ChatBot: React.FC = () => {
 
   // Scroll to bottom on new message
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    if (messages.length > 0 || suggestions.length > 0) {
+      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }
   }, [messages, suggestions]);
 
   // Initial welcome message and health check

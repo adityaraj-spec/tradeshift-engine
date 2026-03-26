@@ -77,6 +77,7 @@ class User(Base):
     occupation = Column(String, nullable=True) # Student, Job, Retired
     city = Column(String, nullable=True)
     security_pin = Column(String(4), nullable=True)
+    refresh_token = Column(String, nullable=True, index=True)
     created_at = Column(DateTime, default=datetime.utcnow)
 
 class UserSettings(Base):

@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { X, Info, ChevronDown } from 'lucide-react';
+import { PremiumSelect } from '@/components/ui/PremiumSelect';
 import type { IndicatorId } from '../../constants/indicators';
 
 interface Props {
@@ -80,29 +80,21 @@ export const IndicatorConfigModal: React.FC<Props> = ({ indicatorId, isOpen, onC
       </div>
       <div className="flex items-center justify-between">
         <label className="text-sm font-medium">Basis MA Type</label>
-        <Select value={localSettings.basisMaType} onValueChange={(v) => handleChange('basisMaType', v)}>
-          <SelectTrigger className="w-40 h-9 bg-[#2a2e39] border-[#363c4e] text-sm">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent className="bg-[#1e222d] border-[#363c4e] text-white">
-            {["SMA", "EMA", "SMMA (RMA)", "WMA", "VWMA"].map(opt => (
-              <SelectItem key={opt} value={opt}>{opt}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <PremiumSelect 
+          value={localSettings.basisMaType} 
+          onChange={(v) => handleChange('basisMaType', v)}
+          options={["SMA", "EMA", "SMMA (RMA)", "WMA", "VWMA"].map(opt => ({ value: opt, label: opt }))}
+          className="w-40 bg-[#2a2e39] border border-[#363c4e] rounded px-3 py-1.5 text-sm"
+        />
       </div>
       <div className="flex items-center justify-between">
         <label className="text-sm font-medium">Source</label>
-        <Select value={localSettings.source} onValueChange={(v) => handleChange('source', v)}>
-          <SelectTrigger className="w-40 h-9 bg-[#2a2e39] border-[#363c4e] text-sm">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent className="bg-[#1e222d] border-[#363c4e] text-white">
-            {["close", "open", "high", "low", "hl2", "hlc3", "ohlc4"].map(opt => (
-              <SelectItem key={opt} value={opt} className="capitalize">{opt}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <PremiumSelect 
+          value={localSettings.source} 
+          onChange={(v) => handleChange('source', v)}
+          options={["close", "open", "high", "low", "hl2", "hlc3", "ohlc4"].map(opt => ({ value: opt, label: opt.charAt(0).toUpperCase() + opt.slice(1) }))}
+          className="w-40 bg-[#2a2e39] border border-[#363c4e] rounded px-3 py-1.5 text-sm"
+        />
       </div>
       <div className="flex items-center justify-between">
         <label className="text-sm font-medium">StdDev</label>
@@ -141,16 +133,12 @@ export const IndicatorConfigModal: React.FC<Props> = ({ indicatorId, isOpen, onC
         </div>
         <div className="flex items-center justify-between">
           <label className="text-sm font-medium">Source</label>
-          <Select value={localSettings.source} onValueChange={(v) => handleChange('source', v)}>
-            <SelectTrigger className="w-40 h-9 bg-[#2a2e39] border-[#363c4e] text-sm">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent className="bg-[#1e222d] border-[#363c4e] text-white">
-              {["close", "open", "high", "low", "hl2", "hlc3", "ohlc4"].map(opt => (
-                <SelectItem key={opt} value={opt} className="capitalize">{opt}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <PremiumSelect 
+            value={localSettings.source} 
+            onChange={(v) => handleChange('source', v)}
+            options={["close", "open", "high", "low", "hl2", "hlc3", "ohlc4"].map(opt => ({ value: opt, label: opt.charAt(0).toUpperCase() + opt.slice(1) }))}
+            className="w-40 bg-[#2a2e39] border border-[#363c4e] rounded px-3 py-1.5 text-sm"
+          />
         </div>
       </div>
 
@@ -158,16 +146,12 @@ export const IndicatorConfigModal: React.FC<Props> = ({ indicatorId, isOpen, onC
         <h4 className="text-[10px] font-black uppercase tracking-widest text-white/30">Smoothing</h4>
         <div className="flex items-center justify-between">
           <label className="text-sm font-medium">Type</label>
-          <Select value={localSettings.maType} onValueChange={(v) => handleChange('maType', v)}>
-            <SelectTrigger className="w-40 h-9 bg-[#2a2e39] border-[#363c4e] text-sm">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent className="bg-[#1e222d] border-[#363c4e] text-white">
-              {["None", "SMA", "SMA + Bollinger Bands", "EMA", "SMMA (RMA)", "WMA", "VWMA"].map(opt => (
-                <SelectItem key={opt} value={opt}>{opt}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <PremiumSelect 
+            value={localSettings.maType} 
+            onChange={(v) => handleChange('maType', v)}
+            options={["None", "SMA", "SMA + Bollinger Bands", "EMA", "SMMA (RMA)", "WMA", "VWMA"].map(opt => ({ value: opt, label: opt }))}
+            className="w-40 bg-[#2a2e39] border border-[#363c4e] rounded px-3 py-1.5 text-sm"
+          />
         </div>
         {localSettings.maType !== 'None' && (
           <>
@@ -229,42 +213,30 @@ export const IndicatorConfigModal: React.FC<Props> = ({ indicatorId, isOpen, onC
       </div>
       <div className="flex items-center justify-between">
         <label className="text-sm font-medium">Oscillator MA Type</label>
-        <Select value={localSettings.oscType || 'EMA'} onValueChange={(v) => handleChange('oscType', v)}>
-          <SelectTrigger className="w-40 h-9 bg-[#2a2e39] border-[#363c4e] text-sm">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent className="bg-[#1e222d] border-[#363c4e] text-white">
-            {["EMA", "SMA"].map(opt => (
-              <SelectItem key={opt} value={opt}>{opt}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <PremiumSelect 
+          value={localSettings.oscType || 'EMA'} 
+          onChange={(v) => handleChange('oscType', v)}
+          options={["EMA", "SMA"].map(opt => ({ value: opt, label: opt }))}
+          className="w-40 bg-[#2a2e39] border border-[#363c4e] rounded px-3 py-1.5 text-sm"
+        />
       </div>
       <div className="flex items-center justify-between">
         <label className="text-sm font-medium">Signal MA Type</label>
-        <Select value={localSettings.sigType || 'EMA'} onValueChange={(v) => handleChange('sigType', v)}>
-          <SelectTrigger className="w-40 h-9 bg-[#2a2e39] border-[#363c4e] text-sm">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent className="bg-[#1e222d] border-[#363c4e] text-white">
-            {["EMA", "SMA"].map(opt => (
-              <SelectItem key={opt} value={opt}>{opt}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <PremiumSelect 
+          value={localSettings.sigType || 'EMA'} 
+          onChange={(v) => handleChange('sigType', v)}
+          options={["EMA", "SMA"].map(opt => ({ value: opt, label: opt }))}
+          className="w-40 bg-[#2a2e39] border border-[#363c4e] rounded px-3 py-1.5 text-sm"
+        />
       </div>
       <div className="flex items-center justify-between">
         <label className="text-sm font-medium">Source</label>
-        <Select value={localSettings.source} onValueChange={(v) => handleChange('source', v)}>
-          <SelectTrigger className="w-40 h-9 bg-[#2a2e39] border-[#363c4e] text-sm">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent className="bg-[#1e222d] border-[#363c4e] text-white">
-            {["close", "open", "high", "low"].map(opt => (
-              <SelectItem key={opt} value={opt} className="capitalize">{opt}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <PremiumSelect 
+          value={localSettings.source} 
+          onChange={(v) => handleChange('source', v)}
+          options={["close", "open", "high", "low"].map(opt => ({ value: opt, label: opt.charAt(0).toUpperCase() + opt.slice(1) }))}
+          className="w-40 bg-[#2a2e39] border border-[#363c4e] rounded px-3 py-1.5 text-sm"
+        />
       </div>
     </div>
   );
@@ -282,16 +254,12 @@ export const IndicatorConfigModal: React.FC<Props> = ({ indicatorId, isOpen, onC
       </div>
       <div className="flex items-center justify-between">
         <label className="text-sm font-medium">Source</label>
-        <Select value={localSettings.source || 'close'} onValueChange={(v) => handleChange('source', v)}>
-          <SelectTrigger className="w-40 h-9 bg-[#2a2e39] border-[#363c4e] text-sm">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent className="bg-[#1e222d] border-[#363c4e] text-white">
-            {["close", "open", "high", "low"].map(opt => (
-              <SelectItem key={opt} value={opt} className="capitalize">{opt}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <PremiumSelect 
+          value={localSettings.source || 'close'} 
+          onChange={(v) => handleChange('source', v)}
+          options={["close", "open", "high", "low"].map(opt => ({ value: opt, label: opt.charAt(0).toUpperCase() + opt.slice(1) }))}
+          className="w-40 bg-[#2a2e39] border border-[#363c4e] rounded px-3 py-1.5 text-sm"
+        />
       </div>
     </div>
   );
@@ -322,16 +290,12 @@ export const IndicatorConfigModal: React.FC<Props> = ({ indicatorId, isOpen, onC
           onClick={() => setPickerOpen(pickerOpen === colorKey ? null : colorKey)}
         />
         {widthKey && (
-          <Select value={String(localSettings[widthKey] || 1)} onValueChange={(v) => handleChange(widthKey, parseInt(v))}>
-            <SelectTrigger className="w-14 h-7 bg-[#2a2e39] border-[#363c4e] text-xs">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent className="bg-[#1e222d] border-[#363c4e] text-white">
-              {[1, 2, 3, 4].map(w => (
-                <SelectItem key={w} value={String(w)}>{w}px</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <PremiumSelect 
+            value={String(localSettings[widthKey] || 1)} 
+            onChange={(v) => handleChange(widthKey, parseInt(v))}
+            options={[1, 2, 3, 4].map(w => ({ value: String(w), label: `${w}px` }))}
+            className="w-14 h-7 bg-[#2a2e39] border border-[#363c4e] rounded px-2 py-0.5 text-xs"
+          />
         )}
         {levelKey && (
           <input 
@@ -543,17 +507,17 @@ export const IndicatorConfigModal: React.FC<Props> = ({ indicatorId, isOpen, onC
                 <h4 className="text-[10px] font-black uppercase tracking-widest text-white/30">Calculation</h4>
                 <div className="flex items-center justify-between">
                   <label className="text-sm font-medium flex items-center gap-2">Timeframe <Info size={14} className="opacity-40" /></label>
-                  <Select value={localSettings.timeframe || 'Chart'} onValueChange={(v) => handleChange('timeframe', v)}>
-                    <SelectTrigger className="w-32 h-9 bg-[#2a2e39] border-[#363c4e] text-sm">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent className="bg-[#1e222d] border-[#363c4e] text-white">
-                      <SelectItem value="Chart">Chart</SelectItem>
-                      <SelectItem value="1m">1 minute</SelectItem>
-                      <SelectItem value="5m">5 minutes</SelectItem>
-                      <SelectItem value="1h">1 hour</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <PremiumSelect 
+                    value={localSettings.timeframe || 'Chart'} 
+                    onChange={(v) => handleChange('timeframe', v)}
+                    options={[
+                      { value: 'Chart', label: 'Chart' },
+                      { value: '1m', label: '1 minute' },
+                      { value: '5m', label: '5 minutes' },
+                      { value: '1h', label: '1 hour' }
+                    ]}
+                    className="w-32 bg-[#2a2e39] border border-[#363c4e] rounded px-3 py-1 text-sm"
+                  />
                 </div>
                 <div className="flex items-center gap-3">
                   <input type="checkbox" checked={localSettings.wait} onChange={(e) => handleChange('wait', e.target.checked)} className="w-4 h-4 bg-[#2a2e39] border-[#363c4e] rounded accent-blue-500" />

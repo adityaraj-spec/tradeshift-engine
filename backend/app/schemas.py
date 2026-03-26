@@ -52,6 +52,34 @@ class UserLogin(UserBase):
     password: str
 
 
+class PinVerifyRequest(BaseModel):
+    email: str
+    pin: str
+
+    @field_validator("pin")
+    def validate_pin(cls, value):
+        if not value.isdigit() or len(value) != 4:
+            raise ValueError("PIN must be exactly 4 digits.")
+        return value
+
+
+class PinIdentityRequest(BaseModel):
+    email: str
+    dob: str
+
+
+class PinResetRequest(BaseModel):
+    email: str
+    dob: str
+    new_pin: str
+
+    @field_validator("new_pin")
+    def validate_new_pin(cls, value):
+        if not value.isdigit() or len(value) != 4:
+            raise ValueError("New PIN must be exactly 4 digits.")
+        return value
+
+
 class User(UserBase):
     id: int
     full_name: Optional[str] = None

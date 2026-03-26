@@ -7,18 +7,35 @@ const Login: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
   const { login } = useAuth();
   const navigate = useNavigate();
 
+  const validate = (): boolean => {
+    const errors: Record<string, string> = {};
+    if (!email.trim()) {
+      errors.email = 'Email address is required';
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      errors.email = 'Please enter a valid email address';
+    }
+    if (!password) {
+      errors.password = 'Password is required';
+    }
+    setFieldErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+    if (!validate()) return;
     setLoading(true);
 
     try {
       await login({ email, password });
-      navigate('/trade');
+      // Redirect to PIN verification instead of main page directly
+      navigate('/pin-verify', { state: { email } });
     } catch (err: any) {
       setError(err.response?.data?.detail || 'Failed to login. Please check your credentials.');
     } finally {
@@ -62,12 +79,12 @@ const Login: React.FC = () => {
                 <input
                   type="email"
                   value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="block w-full pl-11 pr-4 py-3 bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl leading-5 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-tv-primary/50 focus:border-tv-primary transition-all sm:text-sm"
+                  onChange={(e) => { setEmail(e.target.value); if (fieldErrors.email) setFieldErrors((prev: Record<string, string>) => { const n = { ...prev }; delete n['email']; return n; }); }}
+                  className={`block w-full pl-11 pr-4 py-3 bg-slate-100 dark:bg-white/5 border rounded-xl leading-5 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 transition-all sm:text-sm ${ fieldErrors.email ? 'border-red-500 focus:ring-red-500/50' : 'border-slate-200 dark:border-white/10 focus:ring-tv-primary/50 focus:border-tv-primary' }`}
                   placeholder="name@example.com"
-                  required
                 />
               </div>
+              {fieldErrors.email && <p className="text-xs text-red-500 mt-1 ml-1 flex items-center gap-1"><AlertCircle size={12}/>{fieldErrors.email}</p>}
             </div>
 
             <div className="space-y-2">
@@ -82,12 +99,12 @@ const Login: React.FC = () => {
                 <input
                   type="password"
                   value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="block w-full pl-11 pr-4 py-3 bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl leading-5 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-tv-primary/50 focus:border-tv-primary transition-all sm:text-sm"
+                  onChange={(e) => { setPassword(e.target.value); if (fieldErrors.password) setFieldErrors((prev: Record<string, string>) => { const n = { ...prev }; delete n['password']; return n; }); }}
+                  className={`block w-full pl-11 pr-4 py-3 bg-slate-100 dark:bg-white/5 border rounded-xl leading-5 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 transition-all sm:text-sm ${ fieldErrors.password ? 'border-red-500 focus:ring-red-500/50' : 'border-slate-200 dark:border-white/10 focus:ring-tv-primary/50 focus:border-tv-primary' }`}
                   placeholder="••••••••"
-                  required
                 />
               </div>
+              {fieldErrors.password && <p className="text-xs text-red-500 mt-1 ml-1 flex items-center gap-1"><AlertCircle size={12}/>{fieldErrors.password}</p>}
             </div>
 
             <button

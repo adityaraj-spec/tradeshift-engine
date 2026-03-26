@@ -31,7 +31,15 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       const response = await axios.get('/auth/me');
       setUser(response.data);
     } catch (error) {
-      setUser(null);
+      // If access token is expired or missing, try silent refresh
+      try {
+        await axios.post('/auth/refresh');
+        // If refresh succeeds, try getting the user profile again
+        const retryResponse = await axios.get('/auth/me');
+        setUser(retryResponse.data);
+      } catch (refreshError) {
+        setUser(null);
+      }
     } finally {
       setLoading(false);
     }

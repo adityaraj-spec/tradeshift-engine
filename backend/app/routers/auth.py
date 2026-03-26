@@ -8,16 +8,9 @@ import bcrypt
 from datetime import datetime, timedelta
 import jwt
 import os
-import logging
-from .config import SECRET_KEY, ALGORITHM, ACCESS_TOKEN_EXPIRE_MINUTES
-from .services.email_service import (
-    send_welcome_email,
-    send_pin_verified_email,
-    send_pin_reset_email,
-)
+from .config import SECRET_KEY, ALGORITHM, ACCESS_TOKEN_EXPIRE_MINUTES, REFRESH_TOKEN_EXPIRE_DAYS
 
-logger = logging.getLogger(__name__)
-router = APIRouter(prefix="/auth", tags=["auth"])
+router = APIRouter(prefix="/api/auth", tags=["auth"])
 
 # --- AUTH LOGIC ---
 
@@ -35,8 +28,15 @@ from typing import Optional
 
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
     to_encode = data.copy()
-    expire = datetime.utcnow() + (expires_delta or timedelta(minutes=15))
-    to_encode.update({"exp": expire})
+    expire = datetime.utcnow() + (expires_delta or timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES))
+    to_encode.update({"exp": expire, "type": "access"})
+    encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+    return encoded_jwt
+
+def create_refresh_token(data: dict):
+    to_encode = data.copy()
+    expire = datetime.utcnow() + timedelta(days=REFRESH_TOKEN_EXPIRE_DAYS)
+    to_encode.update({"exp": expire, "type": "refresh"})
     encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
     return encoded_jwt
 
@@ -51,7 +51,6 @@ async def register(
     result = await db.execute(select(User).filter(User.email == user.email))
     db_user = result.scalars().first()
     if db_user:
-        logger.warning(f"Registration failed: Email {user.email} already exists")
         raise HTTPException(status_code=400, detail="Email already registered")
     
     # 2. Create User
@@ -69,24 +68,18 @@ async def register(
         city=user.city,
         security_pin=user.security_pin
     )
-    
-    # Generate Refresh Token
-    refresh_token = create_access_token(
-        data={"sub": user.email, "type": "refresh"}, 
-        expires_delta=timedelta(days=7)
-    )
-    new_user.refresh_token = refresh_token
-
     db.add(new_user)
     await db.commit()
     await db.refresh(new_user)
 
     # 3. Auto-Login (Set Cookies)
-    access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
-    access_token = create_access_token(
-        data={"sub": new_user.email}, expires_delta=access_token_expires
-    )
+    access_token = create_access_token(data={"sub": new_user.email})
+    refresh_token = create_refresh_token(data={"sub": new_user.email})
     
+    # Store refresh token in DB
+    new_user.refresh_token = refresh_token
+    await db.commit()
+
     response.set_cookie(
         key="access_token",
         value=access_token,
@@ -95,14 +88,13 @@ async def register(
         samesite="lax",
         max_age=ACCESS_TOKEN_EXPIRE_MINUTES * 60
     )
-    
     response.set_cookie(
         key="refresh_token",
         value=refresh_token,
         httponly=True,
         secure=False,
         samesite="lax",
-        max_age=7 * 24 * 60 * 60 # 7 days
+        max_age=REFRESH_TOKEN_EXPIRE_DAYS * 24 * 60 * 60
     )
 
     # 4. Trigger Inngest Workflow
@@ -131,15 +123,14 @@ async def register(
     except Exception as e:
         print(f"❌ Failed to send Inngest event: {e}")
 
-    # 5. Send welcome email in background
-    background_tasks.add_task(send_welcome_email, new_user.email, new_user.full_name or "Trader")
-
     return new_user
 
-@router.post("/login", response_model=UserSchema)
+@router.post("/login", response_model=UserSchema) # Return User schema, not just Token
 async def login(
     user: UserLogin, 
-    response: Response,
+    response: Response, 
+    request: Request,
+    background_tasks: BackgroundTasks,
     db: AsyncSession = Depends(get_db)
 ):
     result = await db.execute(select(User).filter(User.email == user.email))
@@ -147,16 +138,14 @@ async def login(
     if not db_user or not verify_password(user.password, db_user.hashed_password):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Incorrect email or password")
     
-    access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
-    access_token = create_access_token(data={"sub": db_user.email}, expires_delta=access_token_expires)
+    access_token = create_access_token(data={"sub": db_user.email})
+    refresh_token = create_refresh_token(data={"sub": db_user.email})
     
-    refresh_token = create_access_token(
-        data={"sub": db_user.email, "type": "refresh"}, 
-        expires_delta=timedelta(days=7)
-    )
+    # Store refresh token in DB
     db_user.refresh_token = refresh_token
     await db.commit()
-
+    
+    # Set HttpOnly Cookies
     response.set_cookie(
         key="access_token",
         value=access_token,
@@ -165,118 +154,69 @@ async def login(
         samesite="lax",
         max_age=ACCESS_TOKEN_EXPIRE_MINUTES * 60
     )
-    
     response.set_cookie(
         key="refresh_token",
         value=refresh_token,
         httponly=True,
         secure=False,
         samesite="lax",
-        max_age=7 * 24 * 60 * 60
+        max_age=REFRESH_TOKEN_EXPIRE_DAYS * 24 * 60 * 60
     )
-    
+
+    # Trigger New Login Alert here
+    from app.services.email_service import send_login_alert_email
+    current_time = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S UTC")
+    ip_address = request.client.host if request.client else "Unknown"
+    background_tasks.add_task(
+        send_login_alert_email,
+        email=db_user.email,
+        name=db_user.full_name,
+        login_time=current_time,
+        ip_address=ip_address
+    )
+
+    # Return User Profile for LocalStorage (Hybrid Approach)
     return db_user
 
 @router.post("/logout")
-def logout(response: Response):
+async def logout(response: Response, db: AsyncSession = Depends(get_db)):
+    # Optional: If you had current_user dependency here, you'd clear their specific token
+    # For now, we clear the cookies and rely on the next login to overwrite the DB token
     response.delete_cookie("access_token")
+    response.delete_cookie("refresh_token")
     return {"message": "Logged out successfully"}
 
-@router.post("/verify-pin")
-async def verify_pin(
-    request: PinVerifyRequest,
-    response: Response,
-    background_tasks: BackgroundTasks,
-    db: AsyncSession = Depends(get_db)
-):
-    result = await db.execute(select(User).filter(User.email == request.email))
-    db_user = result.scalars().first()
-    
-    if not db_user:
-        logger.warning(f"PIN Verification failed: User {request.email} not found")
-        raise HTTPException(status_code=404, detail="User not found")
-        
-    if db_user.security_pin != request.pin:
-        logger.warning(f"PIN Verification failed for {request.email}: Incorrect PIN")
-        raise HTTPException(status_code=400, detail="Please enter correct security pin")
-    
-    # Update Refresh Token on successful verification
-    refresh_token = create_access_token(
-        data={"sub": db_user.email, "type": "refresh"}, 
-        expires_delta=timedelta(days=7)
-    )
-    db_user.refresh_token = refresh_token
-    await db.commit()
-
-    # Re-issue cookies to ensure session is fresh after identity check
-    access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
-    access_token = create_access_token(
-        data={"sub": db_user.email}, expires_delta=access_token_expires
-    )
-    
-    response.set_cookie(
-        key="access_token",
-        value=access_token,
-        httponly=True,
-        secure=False,
-        samesite="lax",
-        max_age=ACCESS_TOKEN_EXPIRE_MINUTES * 60
-    )
-
-    response.set_cookie(
-        key="refresh_token",
-        value=refresh_token,
-        httponly=True,
-        secure=False,
-        samesite="lax",
-        max_age=7 * 24 * 60 * 60
-    )
-
-    # Send PIN verified email in background
-    verified_at = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S UTC")
-    background_tasks.add_task(
-        send_pin_verified_email,
-        db_user.email,
-        db_user.full_name or "Trader",
-        verified_at
-    )
-    
-    return {"message": "PIN verified successfully"}
-
 @router.post("/refresh")
-async def refresh_session(request: Request, response: Response, db: AsyncSession = Depends(get_db)):
-    """
-    Silent refresh: Uses refresh_token from cookies to issue a new access_token.
-    """
-    token = request.cookies.get("refresh_token")
+async def refresh(
+    response: Response, 
+    db: AsyncSession = Depends(get_db), 
+    refresh_token: Optional[str] = None
+):
+    # If refresh_token is not in body, it might be in cookies
+    # Note: refresh_token: Optional[str] = Cookie(None) is better but let's be flexible
+    return await handle_refresh(response, db, refresh_token)
+
+async def handle_refresh(response: Response, db: AsyncSession, token: Optional[str]):
     if not token:
         raise HTTPException(status_code=401, detail="Refresh token missing")
-
+    
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        email = payload.get("sub")
-        token_type = payload.get("type")
-        
-        if email is None or token_type != "refresh":
-            raise HTTPException(status_code=401, detail="Invalid refresh token type")
-            
+        if payload.get("type") != "refresh":
+             raise HTTPException(status_code=401, detail="Invalid token type")
+        email: str = payload.get("sub")
     except jwt.PyJWTError:
         raise HTTPException(status_code=401, detail="Invalid refresh token")
-
-    # Verify user and token in DB
+    
     result = await db.execute(select(User).filter(User.email == email))
     user = result.scalars().first()
     
-    if user is None or user.refresh_token != token:
-        logger.warning(f"Refresh attempt failed for {email}: Token mismatch or user not found")
-        raise HTTPException(status_code=401, detail="Refresh token revoked or invalid")
-
-    # Issue new Access Token
-    access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
-    new_access_token = create_access_token(
-        data={"sub": user.email}, expires_delta=access_token_expires
-    )
-
+    if not user or user.refresh_token != token:
+        raise HTTPException(status_code=401, detail="Refresh token used or invalid")
+    
+    # Issue new access token
+    new_access_token = create_access_token(data={"sub": user.email})
+    
     response.set_cookie(
         key="access_token",
         value=new_access_token,
@@ -285,8 +225,37 @@ async def refresh_session(request: Request, response: Response, db: AsyncSession
         samesite="lax",
         max_age=ACCESS_TOKEN_EXPIRE_MINUTES * 60
     )
+    
+    return {"message": "Token refreshed"}
 
-    return {"status": "success"}
+@router.post("/verify-pin")
+async def verify_pin(
+    request: PinVerifyRequest, 
+    http_request: Request,
+    background_tasks: BackgroundTasks,
+    db: AsyncSession = Depends(get_db)
+):
+    result = await db.execute(select(User).filter(User.email == request.email))
+    db_user = result.scalars().first()
+    
+    if not db_user:
+        raise HTTPException(status_code=404, detail="User not found")
+        
+    if db_user.security_pin != request.pin:
+        raise HTTPException(status_code=400, detail="Please enter correct security pin")
+        
+    from app.services.email_service import send_pin_verified_email
+    current_time = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S UTC")
+    
+    # Send Login Successful / PIN Verified confirmation
+    background_tasks.add_task(
+        send_pin_verified_email,
+        email=db_user.email,
+        name=db_user.full_name,
+        verified_at=current_time
+    )
+        
+    return {"message": "PIN verified successfully"}
 
 @router.post("/verify-identity")
 async def verify_identity(request: PinIdentityRequest, db: AsyncSession = Depends(get_db)):
@@ -303,7 +272,7 @@ async def verify_identity(request: PinIdentityRequest, db: AsyncSession = Depend
 
 @router.post("/reset-pin")
 async def reset_pin(
-    request: PinResetRequest,
+    request: PinResetRequest, 
     background_tasks: BackgroundTasks,
     db: AsyncSession = Depends(get_db)
 ):
@@ -318,14 +287,15 @@ async def reset_pin(
         
     db_user.security_pin = request.new_pin
     await db.commit()
-
-    # Send PIN reset confirmation email in background
-    reset_at = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S UTC")
+    
+    from app.services.email_service import send_pin_reset_email
+    current_time = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S UTC")
+    
     background_tasks.add_task(
         send_pin_reset_email,
-        db_user.email,
-        db_user.full_name or "Trader",
-        reset_at
+        email=db_user.email,
+        name=db_user.full_name,
+        reset_at=current_time
     )
     
     return {"message": "PIN reset successfully"}
