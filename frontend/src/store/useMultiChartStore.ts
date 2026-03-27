@@ -22,14 +22,18 @@ export interface ChartInstance {
 
 export type LayoutType = 1 | 2 | 3 | 4;
 
+export type TimeframeId = '1min' | '3min' | '5min' | '15min' | '30min' | '1hr';
+
 interface MultiChartState {
   charts: ChartInstance[];
   layoutType: LayoutType;
   activeChartId: string;
+  activeTimeframe: TimeframeId;
 
   // Layout
   setLayoutType: (type: LayoutType) => void;
   setActiveChart: (id: string) => void;
+  setActiveTimeframe: (tf: TimeframeId) => void;
 
   // Chart CRUD
   addChart: (symbol?: string) => void;
@@ -59,6 +63,7 @@ export const useMultiChartStore = create<MultiChartState>()((set, get) => ({
   charts: [createChartInstance(0)],
   layoutType: 1,
   activeChartId: 'chart-0',
+  activeTimeframe: '1min' as TimeframeId,
 
   setLayoutType: (type: LayoutType) => {
     const state = get();
@@ -78,6 +83,14 @@ export const useMultiChartStore = create<MultiChartState>()((set, get) => ({
   },
 
   setActiveChart: (id: string) => set({ activeChartId: id }),
+
+  setActiveTimeframe: (tf: TimeframeId) => {
+    // Clear all chart data so it re-fetches at the new interval
+    set((state) => ({
+      activeTimeframe: tf,
+      charts: state.charts.map((c) => ({ ...c, candleData: [], timeframe: tf })),
+    }));
+  },
 
   addChart: (symbol?: string) => {
     const state = get();

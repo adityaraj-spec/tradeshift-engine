@@ -422,18 +422,35 @@ async def get_available_dates(symbol: str):
 
 
 @app.get("/api/historical/{symbol}")
-async def get_historical_candles(symbol: str, limit: int = 500, date: str = None):
+async def get_historical_candles(symbol: str, limit: int = 500, date: str = None, interval: str = "1min"):
     """
     Return historical OHLC candles for a given symbol from its Parquet file.
      Optionally filtered by a specific YYYY-MM-DD date.
+     Supports resampling via interval parameter.
 
     Args:
         symbol: Symbol name (e.g. 'NIFTY', 'BANKNIFTY')
         limit:  Max candles to return (default 500, most recent)
+        date:   Optional date filter (YYYY-MM-DD)
+        interval: Candle interval - '1min', '3min', '5min', '15min', '30min', '1hr' (default '1min')
 
     Returns:
-        JSON list of {time, open, high, low, close} objects
+        JSON list of {time, open, high, low, close, volume} objects
     """
+    # Map interval strings to pandas resample rules
+    INTERVAL_MAP = {
+        '1min': '1min',
+        '3min': '3min',
+        '5min': '5min',
+        '15min': '15min',
+        '30min': '30min',
+        '1hr': '1h',
+    }
+    
+    resample_rule = INTERVAL_MAP.get(interval)
+    if resample_rule is None:
+        raise HTTPException(status_code=400, detail=f"Invalid interval '{interval}'. Allowed: {list(INTERVAL_MAP.keys())}")
+
     try:
         base_symbol = symbol.split('-')[0] if '-' in symbol else symbol
         df, _, _ = load_parquet_for_symbol(base_symbol, date, allow_fallback=True)
@@ -465,6 +482,23 @@ async def get_historical_candles(symbol: str, limit: int = 500, date: str = None
             else:
                 print(f"⚠️ No data found for {symbol} on {date}. Using most recent data instead.")
 
+        # Resample to requested interval if not already 1min
+        if interval != '1min':
+            df = df.set_index(time_col)
+            # Ensure volume column exists
+            if 'volume' not in df.columns:
+                df['volume'] = 0
+            df = df.resample(resample_rule).agg({
+                'open': 'first',
+                'high': 'max',
+                'low': 'min',
+                'close': 'last',
+                'volume': 'sum'
+            }).dropna(subset=['open'])
+            df = df.reset_index()
+            # The index column after reset is the datetime
+            time_col = df.columns[0]
+
         # Take the most recent `limit` candles
         df = df.tail(limit)
 
@@ -480,7 +514,7 @@ async def get_historical_candles(symbol: str, limit: int = 500, date: str = None
                 "volume": float(row.get("volume", 0)) if "volume" in row.index else 0,
             })
 
-        return {"symbol": symbol, "candles": candles}
+        return {"symbol": symbol, "candles": candles, "interval": interval}
 
     except FileNotFoundError as e:
         raise HTTPException(status_code=404, detail=str(e))

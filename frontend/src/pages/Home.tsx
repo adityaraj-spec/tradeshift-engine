@@ -1,10 +1,11 @@
 import { useState, useMemo, useEffect, useCallback, useRef } from 'react';
-import { CalendarRange, X } from 'lucide-react';
+import { X } from 'lucide-react';
 import TopToolbar from '../components/layout/TopToolbar';
 import ProChart from '../components/ProChart/ProChart';
 import { MultiChartGrid } from '../components/ProChart/MultiChartGrid';
 import type { GameData } from '../components/ProChart/ProChart';
 import { useMultiChartStore } from '../store/useMultiChartStore';
+import type { TimeframeId } from '../store/useMultiChartStore';
 import { fetchHistoricalCandles } from '../services/MarketDataService';
 import TradePanel from '../components/TradePanel/TradePanel';
 import NewsPanel from '../components/features/NewsPanel';
@@ -69,7 +70,7 @@ const Home = () => {
   const [activeDrawingTool, setActiveDrawingTool] = useState<DrawingToolId>(null);
   const [isLibraryOpen, setIsLibraryOpen] = useState(false);
 
-  const { charts, activeChartId, setChartData } = useMultiChartStore();
+  const { charts, activeChartId, setChartData, activeTimeframe, setActiveTimeframe } = useMultiChartStore();
 
   // 1. Sync useGame's selectedSymbol with the active chart
   const prevActiveChartIdRef = useRef(activeChartId);
@@ -97,14 +98,14 @@ const Home = () => {
       const visibleCharts = charts.slice(0, layoutType);
 
       for (const chart of visibleCharts) {
-        const fetchKey = `${chart.id}-${chart.symbol}-${selectedDate}`;
+        const fetchKey = `${chart.id}-${chart.symbol}-${selectedDate}-${activeTimeframe}`;
         
-        // Fetch if symbol/date changed and it's not currently being fetched
+        // Fetch if symbol/date/timeframe changed and it's not currently being fetched
         if (chart.symbol && lastFetchedRef.current[chart.id] !== fetchKey) {
           lastFetchedRef.current[chart.id] = fetchKey;
           try {
-            console.log(`🌐 Fetching independent data for Slot ${chart.id}: ${chart.symbol}`);
-            const candles = await fetchHistoricalCandles(chart.symbol, 500, selectedDate || '');
+            console.log(`🌐 Fetching ${activeTimeframe} data for Slot ${chart.id}: ${chart.symbol}`);
+            const candles = await fetchHistoricalCandles(chart.symbol, 500, selectedDate || '', activeTimeframe);
             setChartData(chart.id, candles);
           } catch (err) {
             console.error(`❌ Failed to fetch data for ${chart.symbol} in slot ${chart.id}:`, err);
@@ -116,7 +117,7 @@ const Home = () => {
     };
 
     fetchVisibleCharts();
-  }, [charts, selectedDate, setChartData]);
+  }, [charts, selectedDate, setChartData, activeTimeframe]);
 
   // 3. Force refresh data for all charts when symbol changes in store
   // (Handled by the effect above since candleData is cleared when symbol changes in store)
@@ -478,14 +479,21 @@ const Home = () => {
 
       {/* BOTTOM FOOTER */}
       <div className="h-8 border-t-4 border-tv-border bg-tv-bg-base flex items-center justify-between px-4 text-xs font-semibold text-tv-text-secondary select-none flex-shrink-0">
-        {/* Bottom Left: Ranges */}
-        <div className="flex items-center space-x-3">
-          {['1D', '5D', '1M', '3M', '6M', 'YTD', '1Y', '5Y', 'All'].map((range) => (
-            <span key={range} className="hover:text-blue-500 cursor-pointer transition-colors px-1">
-              {range}
+        {/* Bottom Left: Timeframe Intervals */}
+        <div className="flex items-center space-x-1">
+          {(['1min', '3min', '5min', '15min', '30min', '1hr'] as TimeframeId[]).map((tf) => (
+            <span
+              key={tf}
+              onClick={() => setActiveTimeframe(tf)}
+              className={`px-2 py-0.5 rounded cursor-pointer transition-all duration-200 font-semibold text-[11px] uppercase tracking-wider ${
+                activeTimeframe === tf
+                  ? 'bg-blue-500/20 text-blue-400 border border-blue-500/40 shadow-[0_0_8px_rgba(59,130,246,0.15)]'
+                  : 'hover:text-blue-400 hover:bg-white/5 text-tv-text-secondary'
+              }`}
+            >
+              {tf}
             </span>
           ))}
-          <CalendarRange size={14} className="cursor-pointer hover:text-tv-text-primary ml-2" />
         </div>
 
         {/* Bottom Right: Time Info */}
