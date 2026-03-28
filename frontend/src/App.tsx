@@ -9,6 +9,7 @@ import Signup from './pages/auth/Signup';
 
 import Layout from './components/layout/layout';
 import Home from './pages/Home';
+import LandingPage from './pages/LandingPage';
 import Home1 from './pages/Home1';
 import ResearchHub from './pages/ResearchHub';
 import ScreenerPage from './pages/ScreenerPage';
@@ -36,7 +37,8 @@ export default function App() {
         <AuthProvider>
           <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
             <Routes>
-              <Route path="/" element={<Navigate to="/home1" replace />} />
+              <Route path="/" element={<Navigate to="/landing" replace />} />
+              <Route path="/landing" element={<LandingPage />} />
               <Route path="/login" element={<Login />} />
               <Route path="/signup" element={<Signup />} />
 
