@@ -58,7 +58,9 @@ def is_market_relevant(title: str, description: str, symbol: str) -> bool:
         "stock", "market", "trade", "profit", "loss", "revenue", "earnings", 
         "dividend", "ipo", "shares", "invest", "finance", "economy", "bank", 
         "fed", "interest rate", "inflation", "gdp", "quarterly", "acquisition", 
-        "merger", "ceo", "guidance", "bull", "bear", "rally", "slump"
+        "merger", "ceo", "guidance", "bull", "bear", "rally", "slump",
+        "nifty", "sensex", "nse", "bse", "rbi", "sebi", "fii", "dii", "it raid",
+        "gst", "ltcg", "stcg", "monetary policy", "repo rate"
     ]
     
     # Generic news categories to exclude
@@ -365,3 +367,40 @@ async def generate_news_explainer(news_title: str, news_desc: str, symbol: str) 
             "analogy": "Imagine a library where the books are rearranged.",
             "golden_rule": "Knowledge is the greatest hedge."
         }
+async def generate_news_explanation(news_title: str, news_desc: str, user_level: str = "Beginner") -> str:
+    """
+    Generates a professional, educational explanation for any news article.
+    Used by the main News page and AI Explainer modal.
+    """
+    print(f"🧐 FinGPT (Gemini) explaining news: '{news_title}' for {user_level} level")
+    
+    prompt = f"""
+    Explain this financial news article for a {user_level} trader.
+    Headline: {news_title}
+    Details: {news_desc}
+    
+    Format your response in simple, educational terms (like Zerodha Varsity). 
+    Break it down into 3-4 concise points:
+    1. THE ESSENCE: What happened in 1 sentence?
+    2. THE WHY: Why is this important for the markets?
+    3. THE IMPACT: Potential reaction in specific sectors or assets.
+    
+    Keep the tone professional yet encouraging. Max 250 words.
+    """
+
+    try:
+        if gemini_model:
+            loop = asyncio.get_event_loop()
+            response = await loop.run_in_executor(None, lambda: gemini_model.generate_content(prompt))
+            return response.text.strip()
+        else:
+            # Fallback to HF
+            messages = [
+                {"role": "system", "content": "You are a world-class financial educator."},
+                {"role": "user", "content": prompt}
+            ]
+            return await _call_hf_inference(messages)
+            
+    except Exception as e:
+        print(f"❌ News Explanation Error: {e}")
+        return f"AI was unable to generate an explanation at this moment. (Error: {str(e)})"

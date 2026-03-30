@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { toast } from 'sonner';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -94,16 +95,26 @@ export const useMultiChartStore = create<MultiChartState>()((set, get) => ({
 
   addChart: (symbol?: string) => {
     const state = get();
-    if (state.charts.length >= MAX_CHARTS) return;
+    if (state.charts.length >= MAX_CHARTS) {
+      toast.error('Maximum 4 charts reached. Close a tab to add a new one.');
+      return;
+    }
 
-    const nextIndex = state.charts.length;
+    const nextIndex = Date.now(); // Unique ID
     const newChart = createChartInstance(nextIndex);
     if (symbol) newChart.symbol = symbol;
     
     const newCharts = [...state.charts, newChart];
     
-    // Auto-adjust layout to accommodate
-    const newLayout = Math.min(newCharts.length, 4) as LayoutType;
+    // If we're in grid mode (layout > 1), we might still want to adjust layout
+    // But for tabs, we just want to add and switch.
+    // Let's only auto-adjust layout if the user was already in grid mode
+    // or if they had 0 charts (shouldn't happen).
+    let newLayout = state.layoutType;
+    if (state.layoutType > 1 && newCharts.length <= 4) {
+      newLayout = newCharts.length as LayoutType;
+    }
+
     set({ 
       charts: newCharts, 
       layoutType: newLayout,
@@ -117,7 +128,11 @@ export const useMultiChartStore = create<MultiChartState>()((set, get) => ({
     if (state.charts.length <= 1) return;
 
     const filtered = state.charts.filter((c) => c.id !== id);
-    const newLayout = Math.min(filtered.length, 4) as LayoutType;
+    let newLayout = state.layoutType;
+    if (state.layoutType > 1) {
+      newLayout = Math.min(filtered.length, 4) as LayoutType;
+    }
+    
     const newActive = state.activeChartId === id
       ? filtered[0].id
       : state.activeChartId;
