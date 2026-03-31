@@ -150,12 +150,13 @@ app.include_router(auth.router)
 app.include_router(inngest.router)
 app.include_router(portfolio.router)
 app.include_router(history.router)
-from app.routers import inngest, portfolio, history, trading, user
+from app.routers import inngest, portfolio, history, trading, user, learn
 # ...
 app.include_router(trading.router)
 app.include_router(user.router)
 app.include_router(news.router)
 app.include_router(community.router)
+app.include_router(learn.router)
 
 # --- 3. INFRASTRUCTURE CONNECTIONS ---
 

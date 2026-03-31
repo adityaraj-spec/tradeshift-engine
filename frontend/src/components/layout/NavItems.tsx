@@ -1,12 +1,13 @@
 import { Link, useLocation } from 'react-router-dom';
 import { useState, useRef, useEffect } from 'react';
-import { ChevronDown, Newspaper, LineChart, History, Briefcase, LayoutDashboard } from 'lucide-react';
+import { ChevronDown, Newspaper, LineChart, History, Briefcase, LayoutDashboard, GraduationCap } from 'lucide-react';
 
 const navItems = [
     { name: 'Trade', path: '/trade', icon: LineChart },
     { name: 'Markets', path: '/markets', icon: LayoutDashboard },
     { name: 'Portfolio', path: '/portfolio', icon: Briefcase },
     { name: 'Screener', path: '/screener', icon: History },
+    { name: 'Learn', path: '/learn', icon: GraduationCap },
 ];
 
 export const NavItems = () => {

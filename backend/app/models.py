@@ -211,3 +211,48 @@ class CommunityMessage(Base):
     recipient_id = Column(Integer, nullable=True, index=True) # Null for channel messages
     content = Column(String)
     timestamp = Column(DateTime, default=datetime.utcnow)
+
+
+# ═══════════════════════════════════════════
+# LEARNING / ACADEMY MODELS
+# ═══════════════════════════════════════════
+
+class LearningProgress(Base):
+    """
+    Tracks per-lesson completion for each user.
+    """
+    __tablename__ = "learning_progress"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, index=True)
+    lesson_id = Column(String, index=True)
+    track_id = Column(String, index=True)
+    xp_earned = Column(Integer, default=15)
+    completed_at = Column(DateTime, default=datetime.utcnow)
+
+
+class UserStreak(Base):
+    """
+    Daily learning streak tracking per user.
+    """
+    __tablename__ = "user_streaks"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, unique=True, index=True)
+    current_streak = Column(Integer, default=0)
+    longest_streak = Column(Integer, default=0)
+    last_active_date = Column(DateTime, nullable=True)
+
+
+class UserBadge(Base):
+    """
+    Earned badges for gamification.
+    """
+    __tablename__ = "user_badges"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, index=True)
+    badge_id = Column(String, index=True)
+    badge_title = Column(String)
+    earned_at = Column(DateTime, default=datetime.utcnow)
+
