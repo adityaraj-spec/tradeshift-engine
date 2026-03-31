@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useNavigate, Link, useSearchParams } from 'react-router-dom';
 import gsap from 'gsap';
+import { MarketJourneyInteractive } from '../components/MarketJourney/MarketJourneyInteractive';
 import { useGSAP } from '@gsap/react';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { useAuth } from '../context/AuthContext';
@@ -1526,7 +1527,8 @@ export default function LandingPage() {
 
       <MobileShowcaseSection />
 
-      <MeteorScrollSection canStart={line2Done} />
+      <MarketJourneyInteractive canStart={line2Done} />
+      {/* <MeteorScrollSection canStart={line2Done} /> */}
 
       <Ticker />
 
