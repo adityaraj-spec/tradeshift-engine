@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useMemo } from 'react';
 import { createChart, ColorType, CandlestickSeries } from '@pipsend/charts';
 import type { IChartApi, ISeriesApi } from '@pipsend/charts';
 import { useChartIndicators } from '../../hooks/useChartIndicators';
@@ -6,6 +6,7 @@ import { useDrawingTools } from '../../hooks/useDrawingTools';
 import type { DrawingToolId } from '../../hooks/useDrawingTools';
 import { useIndicatorSettings } from '../../store/useIndicatorSettings';
 import { useMultiChartStore } from '../../store/useMultiChartStore';
+import { useThemeStore } from '../../store/themeStore';
 import type { ChartInstance } from '../../store/useMultiChartStore';
 import { useDrawingSettings } from '../../store/useDrawingSettings';
 import IndicatorLegend from './IndicatorLegend';
@@ -20,9 +21,8 @@ import { SaveTemplateModal } from './SaveTemplateModal';
 import { ErrorBoundary } from './ErrorBoundary';
 import { useChartObjects } from '../../store/useChartObjects';
 import type { DrawingTemplate, IndicatorTemplate } from '../../store/useChartObjects';
-import { useGame } from '../../hooks/useGame';
-import { Play, Pause, SkipForward, Calendar as CalendarIcon, X } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { useGame } from '../../context/GameContext';
+import type { IndexData } from '../../context/GameContext';
 import { useAlerts } from '../../store/useAlerts';
 import { AlertDialog } from './AlertDialog';
 import { toast } from 'sonner';
@@ -51,6 +51,10 @@ export interface GameData {
   setSpeed: (s: number) => void;
   trades: any[];
   modifyOrder: (id: any, updates: any) => void;
+  currentTime: Date | null;
+  simulatedIndices: any[];
+  /** Per-symbol latest candle for multi-chart independent tick updates */
+  replayTicks?: Record<string, any>;
 }
 
 interface ProChartProps {
@@ -79,23 +83,25 @@ interface ProChartProps {
 }
 
 export const ProChart: React.FC<ProChartProps> = ({ 
-  data, width, height, theme = 'dark', activeDrawingTool, onDrawingToolChange,
+  data, width, height, theme: propTheme, activeDrawingTool, onDrawingToolChange,
   isLibraryOpen, onToggleLibrary,
   onPriceClick, onEntryLineClick, previewPrice, isIndicatorsOpen, onToggleIndicators,
   isAlertsOpen: externalAlertsOpen, onToggleAlerts, onIndicatorStateChange,
   chartId = 'chart-0', isPrimary = true, gameData,
 }) => {
+  const { theme: globalTheme } = useThemeStore();
+  const theme = propTheme || globalTheme;
   const { magnetMode } = useDrawingSettings();
   const internalGame = useGame();
   const {
     currentPrice, currentCandle, isPlaying, 
-    selectedSymbol, togglePlay, isReplayActive, toggleReplay,
-    selectedDate, availableDates, setDate,
-    speed, setSpeed,
-    trades, modifyOrder
-  } = gameData || internalGame;
+    selectedSymbol, isReplayActive,
+    trades, modifyOrder,
+    currentTime, simulatedIndices,
+    replayTicks
+  } = (gameData || internalGame) as any;
 
-  const { charts } = useMultiChartStore();
+  const { charts, activeTimeframe } = useMultiChartStore();
   const myChart = charts.find((c: ChartInstance) => c.id === chartId);
   const mySymbol = myChart?.symbol || selectedSymbol;
 
@@ -116,7 +122,6 @@ export const ProChart: React.FC<ProChartProps> = ({
     activeToolRef.current = activeDrawingTool;
   }, [activeDrawingTool]);
 
-  const [isDateDropdownOpen, setIsDateDropdownOpen] = useState(false);
   const [positionsWithPnL, setPositionsWithPnL] = useState<any[]>([]);
   const [isLocalAlertsOpen, setIsLocalAlertsOpen] = useState(false);
   const lastPriceRef = useRef<number>(currentPrice);
@@ -128,8 +133,28 @@ export const ProChart: React.FC<ProChartProps> = ({
     onToggleAlerts?.();
   };
 
+  // Sync non-primary charts (indices) with simulatedTicks
+  const myIndexData = useMemo(() => {
+    if (!isReplayActive || !simulatedIndices.length) return null;
+    return simulatedIndices.find((idx: IndexData) => 
+      idx.name === mySymbol || 
+      (mySymbol === 'NIFTY' && idx.name === 'NIFTY 50') ||
+      (mySymbol === 'BANKNIFTY' && idx.name === 'BANKNIFTY')
+    );
+  }, [simulatedIndices, mySymbol, isReplayActive]);
+
   // OHLC legend fallback: use last candle from data prop when currentCandle is null
-  const displayCandle = currentCandle || (data.length > 0 ? data[data.length - 1] : null);
+  // OHLC legend fallback: use last candle from data prop when currentCandle is null
+  const displayCandle = currentCandle || 
+    (myIndexData ? { 
+        time: Math.floor(currentTime?.getTime() || 0 / 1000),
+        open: myIndexData.price, 
+        high: myIndexData.price, 
+        low: myIndexData.price, 
+        close: myIndexData.price,
+        symbol: mySymbol
+    } : null) || 
+    (data.length > 0 ? data[data.length - 1] : null);
 
   const { activeIndicators, currentValues, hoverValues, updateHoverValues,
     addSMA, addEMA, addVWAP, addBB, addRSI, addMACD, 
@@ -363,8 +388,8 @@ export const ProChart: React.FC<ProChartProps> = ({
         fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif",
       },
       grid: { 
-        vertLines: { color: isDark ? 'rgba(42, 46, 57, 0.3)' : 'rgba(240, 243, 250, 0.5)', style: 1 }, 
-        horzLines: { color: isDark ? 'rgba(42, 46, 57, 0.3)' : 'rgba(240, 243, 250, 0.5)', style: 1 } 
+        vertLines: { color: isDark ? 'rgba(42, 46, 57, 0.3)' : 'rgba(0, 0, 0, 0.08)', style: 1 }, 
+        horzLines: { color: isDark ? 'rgba(42, 46, 57, 0.3)' : 'rgba(0, 0, 0, 0.08)', style: 1 } 
       },
       width: width || chartContainerRef.current.clientWidth,
       height: height || chartContainerRef.current.clientHeight,
@@ -467,23 +492,232 @@ export const ProChart: React.FC<ProChartProps> = ({
     };
   }, [chartInstance, updateHoverValues]);
 
+  // ─── Timeframe helpers ─────────────────────────────────────────────────────
+  const TIMEFRAME_SECONDS: Record<string, number> = {
+    '1min': 60, '3min': 180, '5min': 300,
+    '15min': 900, '30min': 1800, '1hr': 3600,
+  };
+
+  /** Round a unix timestamp DOWN to the nearest timeframe boundary */
+  const snapToTimeframe = (ts: number, tfSeconds: number) =>
+    Math.floor(ts / tfSeconds) * tfSeconds;
+
+  const lastDataSetTimeRef = useRef<number>(0);
+  // Track whether we were playing in the previous render to detect play-start
+  const wasPlayingRef = useRef(false);
+  // Track the current in-progress candle for OHLCV aggregation during replay
+  const buildingCandleRef = useRef<{
+    time: number; open: number; high: number; low: number; close: number; volume: number;
+  } | null>(null);
+  
+  // Track timeframe changes to force history re-aggregation
+  const lastTimeframeRef = useRef(activeTimeframe);
+
   useEffect(() => {
-    if (seriesRef.current && data.length > 0) {
-      const uniqueData = Array.from(new Map(data.map((d) => [d.time, d])).values()).sort((a, b) => (a.time as number) - (b.time as number));
-      seriesRef.current.setData(uniqueData as any);
-      if (volumeSeriesRef.current) {
-        const volData = uniqueData.map(d => ({
-          time: d.time,
-          value: d.volume || 0,
-          color: d.close >= d.open ? '#089981' : '#f23645'
-        }));
-        volumeSeriesRef.current.setData(volData as any);
-      }
-    } else if (seriesRef.current && data.length === 0) {
-      seriesRef.current.setData([]);
-      volumeSeriesRef.current?.setData([]);
+    if (!seriesRef.current) return;
+    
+    // Check if timeframe changed. If so, force a full reset!
+    if (lastTimeframeRef.current !== activeTimeframe) {
+      lastDataSetTimeRef.current = 0;
+      buildingCandleRef.current = null;
+      lastTimeframeRef.current = activeTimeframe;
     }
-  }, [data]);
+
+    const tfSeconds = TIMEFRAME_SECONDS[activeTimeframe] || 60;
+
+    if (data.length === 0) {
+      // Clear chart if data is empty
+      try { seriesRef.current.setData([]); volumeSeriesRef.current?.setData([]); } catch {}
+      lastDataSetTimeRef.current = 0;
+      buildingCandleRef.current = null;
+      
+      // If NOT replaying, we can return early as there's no live data incoming
+      if (!isReplayActive) return;
+    }
+
+    try {
+      // When play starts fresh, reset so Phase 2 (tick updates) accepts incoming ticks
+      if (isPlaying && !wasPlayingRef.current) {
+        lastDataSetTimeRef.current = 0;
+        buildingCandleRef.current = null;
+      }
+      wasPlayingRef.current = isPlaying;
+
+      // ═══════════════════════════════════════════════════════════════════
+      // PHASE 1: Historical Data Load (setData)
+      // We run this if the chart needs a full reset (initial load or scrubbing).
+      // When in Replay mode, we FILTER this data to only show candles BEFORE
+      // the current replay time. This prevents "future" candles from blocking
+      // incoming ticks in Phase 2.
+      // ═══════════════════════════════════════════════════════════════════
+      const isActivelyPlaying = isReplayActive && isPlaying;
+      
+      // Detect if we need a full reload (e.g. initial load or scrubbing backwards)
+      const currentTickTime = currentTime ? Math.floor(currentTime.getTime() / 1000) : 0;
+      const needsFullReset = lastDataSetTimeRef.current === 0 || 
+                            (isReplayActive && currentTickTime < lastDataSetTimeRef.current);
+
+      if (needsFullReset || !isActivelyPlaying) {
+        // First filter out future candles
+        const filteredData = data.filter(d => {
+          if (!d || typeof d.time !== 'number' || d.open === undefined) return false;
+          // Cutoff logic: don't show candles at or after the current replay time
+          if (isReplayActive && currentTickTime > 0) {
+            return (d.time as number) < currentTickTime;
+          }
+          return true;
+        }).sort((a: any, b: any) => a.time - b.time);
+
+        // Aggregate raw data into the selected timeframe
+        const aggregatedMap = new Map<number, any>();
+        
+        for (const d of filteredData) {
+          const rawTime = Math.floor(d.time as number);
+          const candleTime = snapToTimeframe(rawTime, tfSeconds);
+          
+          if (!aggregatedMap.has(candleTime)) {
+            aggregatedMap.set(candleTime, {
+              time: candleTime,
+              open: Number(d.open) || 0,
+              high: Number(d.high) || 0,
+              low: Number(d.low) || 0,
+              close: Number(d.close) || 0,
+              volume: Number(d.volume) || 0,
+            });
+          } else {
+            const existing = aggregatedMap.get(candleTime);
+            existing.high = Math.max(existing.high, Number(d.high) || 0);
+            existing.low = Math.min(existing.low, Number(d.low) || 0);
+            existing.close = Number(d.close) || 0;
+            existing.volume += Number(d.volume) || 0;
+          }
+        }
+
+        const uniqueData = Array.from(aggregatedMap.values()).sort((a: any, b: any) => a.time - b.time);
+
+        seriesRef.current.setData(uniqueData as any);
+        if (volumeSeriesRef.current) {
+          const volData = uniqueData.map((d: any) => ({
+            time: d.time,
+            value: d.volume || 0,
+            color: d.close >= d.open ? '#089981' : '#f23645'
+          }));
+          volumeSeriesRef.current.setData(volData as any);
+        }
+        lastDataSetTimeRef.current = uniqueData.length > 0
+          ? Math.floor((uniqueData[uniqueData.length - 1] as any).time)
+          : currentTickTime; // If no history, set to current so ticks can advance
+        
+        // Reset building candle when doing a full reload
+        buildingCandleRef.current = null;
+        
+        // Fit content after loading new data (e.g. timeframe change)
+        if (!isActivelyPlaying && chartRef.current && uniqueData.length > 0) {
+          chartRef.current.timeScale().fitContent();
+        }
+      }
+
+      // ═══════════════════════════════════════════════════════════════════
+      // PHASE 2: Live Tick Progression (update)
+      // Only run if we are in replay mode and actively playing.
+      // Each incoming 1-minute tick is AGGREGATED into the correct
+      // timeframe bucket. For example, with 3min timeframe:
+      //   - 9:15, 9:16, 9:17 → all aggregate into a single candle at 9:15
+      //   - 9:18 starts a new candle
+      // The buildingCandleRef tracks the in-progress OHLCV aggregation.
+      // ═══════════════════════════════════════════════════════════════════
+      if (isReplayActive && isPlaying && seriesRef.current) {
+        // Determine the best candle for this chart:
+        // 1. Multi-chart: use replayTicks[mySymbol] for independent updates
+        // 2. Primary symbol fallback: use currentCandle
+        const myTick = (replayTicks && replayTicks[mySymbol])
+          ? replayTicks[mySymbol]
+          : (currentCandle && currentCandle.symbol === mySymbol ? currentCandle : null);
+
+        if (myTick && typeof myTick.time === 'number') {
+          const rawTime = Math.floor(myTick.time);
+          // Snap to the correct timeframe boundary
+          const candleTime = snapToTimeframe(rawTime, tfSeconds);
+          const tickOpen  = Number(myTick.open) || 0;
+          const tickHigh  = Number(myTick.high) || 0;
+          const tickLow   = Number(myTick.low) || 0;
+          const tickClose = Number(myTick.close) || 0;
+          const tickVol   = Number(myTick.volume) || 0;
+
+          // Only accept ticks that are >= the last processed time (prevent backwards-time errors)
+          if (candleTime >= lastDataSetTimeRef.current) {
+            const building = buildingCandleRef.current;
+
+            if (building && building.time === candleTime) {
+              // Same timeframe bucket → aggregate OHLCV
+              building.high   = Math.max(building.high, tickHigh);
+              building.low    = Math.min(building.low, tickLow);
+              building.close  = tickClose;
+              building.volume += tickVol;
+            } else {
+              // New timeframe bucket → start fresh candle
+              buildingCandleRef.current = {
+                time: candleTime,
+                open: tickOpen,
+                high: tickHigh,
+                low: tickLow,
+                close: tickClose,
+                volume: tickVol,
+              };
+            }
+
+            try {
+              seriesRef.current.update({
+                time: candleTime,
+                open:  buildingCandleRef.current!.open,
+                high:  buildingCandleRef.current!.high,
+                low:   buildingCandleRef.current!.low,
+                close: buildingCandleRef.current!.close,
+              } as any);
+              // Track the latest candle time so we never go backwards
+              lastDataSetTimeRef.current = candleTime;
+            } catch (e) {
+              // lightweight-charts will throw if time goes backwards; safe to ignore
+            }
+          }
+        } else if (myIndexData && typeof myIndexData.price === 'number' && currentTime) {
+          // Index chart fallback: synthesize candle from index price
+          const rawTime = currentTime.getTime() / 1000;
+          const candleTime = snapToTimeframe(Math.floor(rawTime), tfSeconds);
+          if (candleTime >= lastDataSetTimeRef.current) {
+            const building = buildingCandleRef.current;
+            const price = myIndexData.price;
+
+            if (building && building.time === candleTime) {
+              building.high  = Math.max(building.high, price);
+              building.low   = Math.min(building.low, price);
+              building.close = price;
+            } else {
+              buildingCandleRef.current = {
+                time: candleTime, open: price, high: price, low: price, close: price, volume: 0,
+              };
+            }
+
+            try {
+              seriesRef.current.update({
+                time: candleTime,
+                open:  buildingCandleRef.current!.open,
+                high:  buildingCandleRef.current!.high,
+                low:   buildingCandleRef.current!.low,
+                close: buildingCandleRef.current!.close,
+              } as any);
+              lastDataSetTimeRef.current = candleTime;
+            } catch (e) {}
+          }
+        }
+      }
+    } catch (e) {
+      console.error("ProChart Master Effect Failure:", e);
+      // Force a full reset on next tick if possible
+      lastDataSetTimeRef.current = 0;
+      buildingCandleRef.current = null;
+    }
+  }, [data, isReplayActive, isPlaying, currentTime, currentCandle, mySymbol, myIndexData, replayTicks, activeTimeframe]);
 
   useEffect(() => {
     if (!seriesRef.current) return;
@@ -505,8 +739,8 @@ export const ProChart: React.FC<ProChartProps> = ({
       try { seriesRef.current?.removePriceLine(item.line); } catch (e) {}
     });
     positionLinesRef.current = [];
-    const activeTrades = trades.filter(t => t.symbol === selectedSymbol && ['OPEN', 'PENDING', 'TRIGGERED'].includes(t.status));
-    activeTrades.forEach(trade => {
+    const activeTrades = trades.filter((t: any) => t.symbol === selectedSymbol && ['OPEN', 'PENDING', 'TRIGGERED'].includes(t.status));
+    activeTrades.forEach((trade: any) => {
       const isBuy = (trade.direction || trade.type) === 'BUY';
       const entryColor = isBuy ? '#26a69a' : '#ef5350';
       if (trade.entryPrice > 0) {
@@ -534,15 +768,19 @@ export const ProChart: React.FC<ProChartProps> = ({
   }, [trades, selectedSymbol, data]);
 
   useEffect(() => {
-    if (!chartRef.current || !seriesRef.current || !trades.length) {
+    if (!chartRef.current || !seriesRef.current || !isPrimary) {
       setPositionsWithPnL([]);
       return;
     }
+
     const updatePnLPositions = () => {
-      const activeTrades = trades.filter(t => t.symbol === selectedSymbol && ['OPEN', 'TRIGGERED'].includes(t.status));
-      const positions = activeTrades.map(trade => {
+      if (!seriesRef.current || !chartRef.current) return;
+      const validPrice = typeof currentPrice === 'number' ? currentPrice : 0;
+      
+      const activeTrades = trades.filter((t: any) => t.symbol === selectedSymbol && ['OPEN', 'TRIGGERED'].includes(t.status));
+      const positions = activeTrades.map((trade: any) => {
         const isBuy = (trade.direction || trade.type) === 'BUY';
-        const pnlValue = (currentPrice - trade.entryPrice) * trade.quantity * (isBuy ? 1 : -1);
+        const pnlValue = (validPrice - trade.entryPrice) * trade.quantity * (isBuy ? 1 : -1);
         const yCoord = seriesRef.current!.priceToCoordinate(trade.entryPrice);
         return {
           id: trade.id, price: trade.entryPrice, pnl: pnlValue,
@@ -552,11 +790,16 @@ export const ProChart: React.FC<ProChartProps> = ({
       });
       setPositionsWithPnL(positions);
     };
+
     updatePnLPositions();
     const timeScale = chartRef.current.timeScale();
     timeScale.subscribeVisibleLogicalRangeChange(updatePnLPositions);
-    return () => { timeScale.unsubscribeVisibleLogicalRangeChange(updatePnLPositions); };
-  }, [trades, currentPrice, selectedSymbol]);
+    return () => { 
+      if (chartRef.current) {
+        try { chartRef.current.timeScale().unsubscribeVisibleLogicalRangeChange(updatePnLPositions); } catch (e) {}
+      }
+    };
+  }, [trades, currentPrice, selectedSymbol, isPrimary]);
 
   // Alert Checking Logic
   useEffect(() => {
@@ -616,28 +859,28 @@ export const ProChart: React.FC<ProChartProps> = ({
         {/* Symbol and OHLC Row */}
         <div className="flex items-center gap-2 px-1 py-0.5 rounded-sm">
           <div className="flex items-center gap-1.5">
-            <span className="font-bold text-[#d1d4dc] text-[13px] hover:text-white cursor-pointer pointer-events-auto">
+            <span className="font-bold text-slate-900 dark:text-[#d1d4dc] text-[13px] hover:text-slate-700 dark:hover:text-white cursor-pointer pointer-events-auto">
               {mySymbol || 'Indian Rupee'}
             </span>
-            <span className="text-[#d1d4dc]/40 text-[11px]">1m · NSE</span>
+            <span className="text-slate-500 dark:text-[#d1d4dc]/40 text-[11px]">{activeTimeframe} · NSE</span>
             <div className={`w-1.5 h-1.5 rounded-full ${isPlaying ? 'bg-[#089981] animate-pulse' : 'bg-[#5d606b]'}`} />
           </div>
           
           <div className="flex items-center gap-2.5 text-[11px] font-medium ml-2">
             <div className="flex gap-0.5">
-              <span className="text-[#d1d4dc]/40">O</span>
+              <span className="text-slate-500 dark:text-[#d1d4dc]/40">O</span>
               <span className={(displayCandle?.open ?? 0) >= (displayCandle?.close ?? 0) ? 'text-[#089981]' : 'text-[#f23645]'}>{displayCandle?.open?.toFixed(2) || '0.00'}</span>
             </div>
             <div className="flex gap-0.5">
-              <span className="text-[#d1d4dc]/40">H</span>
+              <span className="text-slate-500 dark:text-[#d1d4dc]/40">H</span>
               <span className={(displayCandle?.high ?? 0) >= (displayCandle?.close ?? 0) ? 'text-[#089981]' : 'text-[#f23645]'}>{displayCandle?.high?.toFixed(2) || '0.00'}</span>
             </div>
             <div className="flex gap-0.5">
-              <span className="text-[#d1d4dc]/40">L</span>
+              <span className="text-slate-500 dark:text-[#d1d4dc]/40">L</span>
               <span className={(displayCandle?.low ?? 0) >= (displayCandle?.close ?? 0) ? 'text-[#089981]' : 'text-[#f23645]'}>{displayCandle?.low?.toFixed(2) || '0.00'}</span>
             </div>
             <div className="flex gap-0.5">
-              <span className="text-[#d1d4dc]/40">C</span>
+              <span className="text-slate-500 dark:text-[#d1d4dc]/40">C</span>
               <span className={(displayCandle?.close ?? 0) >= (displayCandle?.open ?? 0) ? 'text-[#089981]' : 'text-[#f23645]'}>{displayCandle?.close?.toFixed(2) || '0.00'}</span>
             </div>
             {displayCandle && (
@@ -659,7 +902,7 @@ export const ProChart: React.FC<ProChartProps> = ({
             <span className="text-[#f23645] font-bold text-[11px] leading-tight">{currentPrice.toFixed(1)}</span>
             <span className="text-[#f23645]/60 text-[8px] font-bold uppercase leading-none mt-0.5">Sell</span>
           </div>
-          <div className="text-[9px] font-medium text-[#d1d4dc]/20 px-0.5">0.1</div>
+          <div className="text-[9px] font-medium text-slate-400 dark:text-[#d1d4dc]/20 px-0.5">0.1</div>
           <div 
             className="flex flex-col items-center justify-center border border-[#2962FF] bg-[#2962FF]/5 rounded-[3px] px-2.5 py-0.5 cursor-pointer hover:bg-[#2962FF]/15 group transition-colors min-w-[65px]" 
             onClick={() => onPriceClick?.(currentPrice + 0.1)}
@@ -740,36 +983,7 @@ export const ProChart: React.FC<ProChartProps> = ({
       </div>
       )}
 
-      {/* Replay Toolbar - Primary only */}
-      {isPrimary && isReplayActive && (
-        <div className={`absolute bottom-10 left-1/2 -translate-x-1/2 z-[50] flex items-center bg-[#1e222d] border border-[#2a2e39] rounded shadow-2xl p-1.5 gap-2 select-none backdrop-blur-lg transition-opacity ${activeTool ? 'opacity-40 pointer-events-none' : ''}`}>
-          <div className="relative">
-            <Button variant="ghost" size="sm" className="h-8 gap-2 text-[#d1d4dc] hover:bg-white/5" onClick={() => setIsDateDropdownOpen(!isDateDropdownOpen)}>
-              <CalendarIcon size={14} />
-              <span className="text-xs">{selectedDate || 'Select date'}</span>
-              <span className="text-[10px] ml-1">▼</span>
-            </Button>
-            {isDateDropdownOpen && (
-              <div className="absolute bottom-full left-0 mb-2 w-36 bg-[#1e222d] border border-[#2a2e39] rounded shadow-2xl py-1 z-50 max-h-48 overflow-y-auto custom-scrollbar">
-                {availableDates.map(day => (
-                  <div key={day} className={`px-3 py-1.5 text-xs cursor-pointer hover:bg-blue-600/20 hover:text-blue-500 ${day === selectedDate ? 'text-blue-500 bg-blue-600/10 font-bold' : 'text-[#d1d4dc]'}`} onClick={() => { setIsDateDropdownOpen(false); setDate(day); }}>{day}</div>
-                ))}
-              </div>
-            )}
-          </div>
-          <div className="w-[1px] h-5 bg-[#2a2e39] mx-1" />
-          <Button variant="ghost" size="icon" className="h-8 w-8 text-[#d1d4dc] hover:bg-white/5" onClick={() => togglePlay()}>
-            {isPlaying ? <Pause size={14} className="text-blue-500 fill-blue-500" /> : <Play size={14} />}
-          </Button>
-          <Button variant="ghost" size="icon" className="h-8 w-8 text-[#d1d4dc] hover:bg-white/5"><SkipForward size={14} /></Button>
-          <div className="flex items-center gap-2 px-2 border-l border-[#2a2e39] pl-3">
-            <input type="range" min="1" max="20" step="1" value={speed} onChange={(e) => setSpeed(parseFloat(e.target.value))} className="w-24 h-1 bg-[#2a2e39] rounded-lg appearance-none cursor-pointer" />
-            <span className="text-[10px] font-mono w-10 text-[#d1d4dc] opacity-60">{speed}x</span>
-          </div>
-          <div className="w-[1px] h-5 bg-[#2a2e39] mx-1" />
-          <Button variant="ghost" size="icon" className="h-8 w-8 text-[#f23645]/60 hover:text-[#f23645] hover:bg-red-500/10" onClick={toggleReplay}><X size={14} /></Button>
-        </div>
-      )}
+      {/* Replay Toolbar moved to TopToolbar */}
 
       {isLibraryOpen && onToggleLibrary && (
         <TemplateLibrary 

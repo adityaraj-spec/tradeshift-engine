@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { MessageCircle, X, Send, Maximize2, Minimize2, ExternalLink, Bot, User } from 'lucide-react';
 import { sendChatQuery, fetchSuggestedTopics } from '../../services/chatApi';
 import type { ChatMessage } from '../../services/chatApi';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { toast } from 'sonner';
 
 export const ChatBot: React.FC = () => {
@@ -13,6 +13,8 @@ export const ChatBot: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [sessionId, setSessionId] = useState<string | undefined>(undefined);
   const [suggestions, setSuggestions] = useState<string[]>([]);
+  const [isOnline, setIsOnline] = useState<boolean>(false);
+  const [isCheckingHealth, setIsCheckingHealth] = useState<boolean>(true);
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -35,8 +37,23 @@ export const ChatBot: React.FC = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, suggestions]);
 
-  // Initial welcome message
+  // Initial welcome message and health check
   useEffect(() => {
+    const checkHealth = async () => {
+      try {
+        const { checkBotHealth } = await import('../../services/chatApi');
+        const online = await checkBotHealth();
+        setIsOnline(online);
+      } catch (e) {
+        setIsOnline(false);
+      } finally {
+        setIsCheckingHealth(false);
+      }
+    };
+
+    checkHealth();
+    const interval = setInterval(checkHealth, 30000);
+
     if (isOpen && messages.length === 0) {
       setMessages([
         {
@@ -46,6 +63,8 @@ export const ChatBot: React.FC = () => {
       ]);
       loadInitialSuggestions();
     }
+
+    return () => clearInterval(interval);
   }, [isOpen]);
 
   const loadInitialSuggestions = async () => {
@@ -106,6 +125,13 @@ export const ChatBot: React.FC = () => {
       setIsOpen(false);
     }
   };
+  
+  const location = useLocation();
+
+  // Hide on community page
+  if (location.pathname === '/community') {
+    return null;
+  }
 
   if (!isOpen) {
     return (
@@ -120,7 +146,7 @@ export const ChatBot: React.FC = () => {
 
   return (
     <div 
-      className={`fixed bottom-6 right-6 flex flex-col bg-[#0f0f0f] border border-gray-800 rounded-2xl shadow-2xl z-50 transition-all duration-300 overflow-hidden
+      className={`fixed bottom-6 right-6 flex flex-col bg-[#0f0f0f] border border-gray-800 rounded-md shadow-2xl z-50 transition-all duration-300 overflow-hidden
         ${isExpanded ? 'w-[800px] h-[80vh] right-1/2 translate-x-1/2 bottom-[10vh]' : 'w-[400px] h-[600px]'}
       `}
     >
@@ -128,13 +154,15 @@ export const ChatBot: React.FC = () => {
       <div className="flex items-center justify-between p-4 bg-gradient-to-r from-[#141414] to-[#1a1a1a] border-b border-gray-800">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-full bg-emerald-500/10 flex items-center justify-center border border-emerald-500/20">
-            <Bot size={22} className="text-emerald-400" />
+            <Bot size={22} className={isOnline ? "text-emerald-400" : "text-gray-500"} />
           </div>
           <div>
             <h3 className="text-gray-100 font-semibold text-sm">TradeGuide AI</h3>
             <div className="flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-              <span className="text-gray-400 text-xs">Online • Local Node</span>
+              <span className={`w-2 h-2 rounded-full ${isCheckingHealth || isLoading ? 'bg-yellow-500 animate-pulse' : isOnline ? 'bg-emerald-500 animate-pulse' : 'bg-red-500'}`}></span>
+              <span className="text-gray-400 text-xs">
+                {isCheckingHealth ? 'Connecting...' : (isLoading && messages.length > 1 ? 'Generating...' : (isOnline ? 'Online • Local Node' : 'Offline • Service Down'))}
+              </span>
             </div>
           </div>
         </div>
@@ -163,7 +191,7 @@ export const ChatBot: React.FC = () => {
             </div>
             <div className={`flex flex-col gap-1 max-w-[80%]`}>
               <div 
-                className={`p-3 rounded-2xl text-sm leading-relaxed ${
+                className={`p-3 rounded-md text-sm leading-relaxed ${
                   msg.role === 'user' 
                     ? 'bg-blue-600 text-white rounded-tr-sm' 
                     : 'bg-[#1a1a1a] border border-gray-800 text-gray-200 rounded-tl-sm'
@@ -207,7 +235,7 @@ export const ChatBot: React.FC = () => {
              <div className="w-8 h-8 rounded-full bg-gray-800 flex items-center justify-center shrink-0">
                <Bot size={16} className="text-gray-400" />
              </div>
-             <div className="bg-[#1a1a1a] border border-gray-800 p-4 rounded-2xl rounded-tl-sm flex gap-1 items-center">
+             <div className="bg-[#1a1a1a] border border-gray-800 p-4 rounded-md rounded-tl-sm flex gap-1 items-center">
                <span className="w-2 h-2 rounded-full bg-gray-500 animate-bounce delay-75"></span>
                <span className="w-2 h-2 rounded-full bg-gray-500 animate-bounce delay-150"></span>
                <span className="w-2 h-2 rounded-full bg-gray-500 animate-bounce delay-300"></span>

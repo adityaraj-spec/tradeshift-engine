@@ -155,9 +155,8 @@ const AIAnalyst: React.FC<AIAnalystProps> = ({ symbol, isLaymanMode }) => {
             <div className="h-4 bg-white/5 rounded-full w-2/3 animate-pulse"></div>
           </div>
         ) : (
-<<<<<<< Updated upstream
-          <div className="prose prose-invert max-w-none prose-sm">
-            <div className="text-gray-300 leading-relaxed whitespace-pre-wrap">
+          <div className="prose prose-sm max-w-none dark:prose-invert">
+            <div className="text-black dark:text-gray-300 leading-relaxed whitespace-pre-wrap">
               {currentContent?.includes('<!DOCTYPE html>') || currentContent?.includes('<html') || currentContent?.includes('401') ? (
                 <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-xl text-red-400 text-sm flex flex-col gap-2">
                   <span className="font-bold flex items-center gap-2">
@@ -166,16 +165,12 @@ const AIAnalyst: React.FC<AIAnalystProps> = ({ symbol, isLaymanMode }) => {
                   <span>The AI analysis engine is currently unavailable. This is usually caused by missing or invalid API keys (e.g., HuggingFace). Please check your backend configuration.</span>
                 </div>
               ) : currentContent?.split('###').map((section, idx) => {
-=======
-          <div className="prose prose-sm max-w-none dark:prose-invert">
-            <div className="text-black dark:text-gray-300 leading-relaxed whitespace-pre-wrap">
-              {currentContent?.split('###').map((section, idx) => {
->>>>>>> Stashed changes
+
                 if (!section.trim()) return null;
                 const isVarsity = section.includes('VARSITY LESSON');
                 
                 return (
-                  <div key={idx} className={`mb-6 p-1 ${isVarsity ? 'bg-amber-500/5 border border-amber-500/20 rounded-2xl p-6 shadow-[0_0_20px_-5px_rgba(245,158,11,0.1)]' : ''}`}>
+                  <div key={idx} className={`mb-6 p-1 ${isVarsity ? 'bg-amber-500/5 border border-amber-500/20 rounded-md p-6 shadow-[0_0_20px_-5px_rgba(245,158,11,0.1)]' : ''}`}>
                     {idx > 0 && <h3 className={`text-xs font-black uppercase tracking-widest mb-3 flex items-center gap-2 ${isVarsity ? 'text-amber-400' : 'text-primary'}`}>
                       {isVarsity ? <Lightbulb className="w-4 h-4" /> : <ChevronRight className="w-3 h-3" />}
                       {section.split('\n')[0].replace('###', '').trim()}
@@ -202,7 +197,7 @@ const AIAnalyst: React.FC<AIAnalystProps> = ({ symbol, isLaymanMode }) => {
                         <BrainCircuit className="w-3 h-3 text-primary" />
                       </div>
                     )}
-                    <div className={`p-3 rounded-2xl max-w-[85%] text-sm leading-relaxed ${
+                    <div className={`p-3 rounded-md max-w-[85%] text-sm leading-relaxed ${
                       msg.role === 'user' 
                         ? 'bg-gray-900 text-white dark:bg-white/10 dark:text-white rounded-tr-sm' 
                         : 'bg-primary/5 border border-primary/20 dark:border-primary/10 text-black dark:text-gray-300 rounded-tl-sm'
@@ -221,7 +216,7 @@ const AIAnalyst: React.FC<AIAnalystProps> = ({ symbol, isLaymanMode }) => {
                     <div className="w-6 h-6 rounded-full bg-primary/20 flex items-center justify-center shrink-0 mt-1">
                       <BrainCircuit className="w-3 h-3 text-primary animate-pulse" />
                     </div>
-                    <div className="p-3 rounded-2xl bg-primary/5 border border-primary/10 rounded-tl-sm">
+                    <div className="p-3 rounded-md bg-primary/5 border border-primary/10 rounded-tl-sm">
                       <div className="flex gap-1">
                         <div className="w-1.5 h-1.5 rounded-full bg-primary/50 animate-bounce" style={{ animationDelay: '0ms' }}></div>
                         <div className="w-1.5 h-1.5 rounded-full bg-primary/50 animate-bounce" style={{ animationDelay: '150ms' }}></div>

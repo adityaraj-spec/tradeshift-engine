@@ -15,7 +15,7 @@ interface RatioGridProps {
   isLaymanMode: boolean;
 }
 
-const RatioCard: React.FC<{ label: string; value: string | number; icon: any; laymanLabel: string; laymanExplainer: string; isLaymanMode: boolean }> = ({
+const RatioCard: React.FC<{ label: string; value: string | number; icon: any; laymanLabel: string; laymanExplainer: string; isLaymanMode: boolean }> = React.memo(({
   label, value, icon: Icon, laymanLabel, laymanExplainer, isLaymanMode
 }) => {
   return (
@@ -50,9 +50,9 @@ const RatioCard: React.FC<{ label: string; value: string | number; icon: any; la
       )}
     </div>
   );
-};
+});
 
-const RatioGrid: React.FC<RatioGridProps> = ({ data, isLaymanMode }) => {
+const RatioGrid: React.FC<RatioGridProps> = React.memo(({ data, isLaymanMode }) => {
   if (!data) return null;
 
   const ratios = [
@@ -107,6 +107,6 @@ const RatioGrid: React.FC<RatioGridProps> = ({ data, isLaymanMode }) => {
       ))}
     </div>
   );
-};
+});
 
 export default RatioGrid;

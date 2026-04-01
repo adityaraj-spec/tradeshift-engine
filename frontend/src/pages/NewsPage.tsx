@@ -33,13 +33,20 @@ const NewsPage: React.FC = () => {
 
   useEffect(() => {
     fetchNews(activeCategory);
+    
+    // Auto-refresh every 2 minutes
+    const interval = setInterval(() => {
+      fetchNews(activeCategory);
+    }, 120000); 
+
+    return () => clearInterval(interval);
   }, [activeCategory, fetchNews]);
 
-  const handleExplain = async (id: string, title: string) => {
+  const handleExplain = async (id: string, title: string, description?: string) => {
     setExplainingId(id);
     setSelectedNewsTitle(title);
     try {
-      const result = await explainNews(id, 'Beginner');
+      const result = await explainNews(id, 'Beginner', title, description);
       setExplanation(result);
     } catch (error) {
       console.error('AI Explanation failed:', error);
@@ -54,7 +61,7 @@ const NewsPage: React.FC = () => {
       <div className="max-w-7xl mx-auto px-4 py-8 lg:px-8">
         
         {/* Header Section */}
-        <div className="mb-8 p-6 rounded-2xl bg-white dark:bg-[#1e222d] border border-slate-200 dark:border-[#2a2e39] overflow-hidden relative">
+        <div className="mb-8 p-6 rounded-md bg-white dark:bg-[#1e222d] border border-slate-200 dark:border-[#2a2e39] overflow-hidden relative">
             <div className="relative z-10">
                 <div className="flex items-center gap-2 text-tv-primary mb-2">
                     <BrainCircuit size={20} />
@@ -64,8 +71,15 @@ const NewsPage: React.FC = () => {
                     Global News <span className="text-tv-primary">& AI Insights</span>
                 </h1>
                 <p className="text-slate-500 dark:text-slate-400 max-w-2xl">
-                    Stay ahead of the markets with real-time news curated from global sources and simplified by AI.
+                    Stay ahead of the markets with real-time news curated from global and Indian sources, simplified by AI.
                 </p>
+                <div className="mt-4 flex items-center gap-3">
+                    <div className="flex items-center gap-1.5 px-2 py-1 rounded bg-green-500/10 border border-green-500/20">
+                        <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+                        <span className="text-[10px] font-black text-green-500 uppercase tracking-widest">Live Updates</span>
+                    </div>
+                    <span className="text-[10px] text-slate-400 font-medium italic">Refreshing every 2 minutes</span>
+                </div>
             </div>
             {/* Background Glow */}
             <div className="absolute top-0 right-0 w-64 h-64 bg-tv-primary/5 blur-[80px] -mr-32 -mt-32 pointer-events-none" />
@@ -109,7 +123,7 @@ const NewsPage: React.FC = () => {
       {/* AI Explanation Modal */}
       {explanation && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="bg-white dark:bg-[#1e222d] w-full max-w-2xl rounded-2xl shadow-2xl border border-slate-200 dark:border-[#363a45] overflow-hidden flex flex-col max-h-[90vh]">
+          <div className="bg-white dark:bg-[#1e222d] w-full max-w-2xl rounded-md shadow-2xl border border-slate-200 dark:border-[#363a45] overflow-hidden flex flex-col max-h-[90vh]">
             
             <div className="p-4 border-b border-slate-100 dark:border-[#2a2e39] flex justify-between items-center bg-slate-50 dark:bg-[#1e222d]">
               <div className="flex items-center gap-2 text-tv-primary">

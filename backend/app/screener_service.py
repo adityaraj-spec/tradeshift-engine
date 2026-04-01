@@ -1,4 +1,5 @@
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select
 from .models import StockFundamental
 import logging
 
@@ -6,7 +7,7 @@ logger = logging.getLogger(__name__)
 
 class ScreenerService:
     @staticmethod
-    def get_multibagger_candidates(db: Session):
+    async def get_multibagger_candidates(db: AsyncSession):
         """
         Identify potential multi-bagger stocks based on:
         1. ROCE > 20% (Efficiency)
@@ -14,30 +15,33 @@ class ScreenerService:
         3. Debt to Equity < 0.5 (Solvency)
         4. Revenue Growth (5Y) > 15% (Growth)
         """
+        # Always start with our high-quality featured mock stocks to ensure a rich list
+        mock_candidates = ScreenerService._get_mock_candidates()
+        final_results = {c["symbol"]: c for c in mock_candidates}
+        
         try:
             if db is None:
-                return ScreenerService._get_mock_candidates()
+                return list(final_results.values())
                 
-            candidates = db.query(StockFundamental).all()
+            result = await db.execute(select(StockFundamental))
+            db_candidates = result.scalars().all()
             
-            # If no data in DB, return high-quality mock candidates for the demo
-            if not candidates:
-                return ScreenerService._get_mock_candidates()
-                
-            results = []
-            for c in candidates:
-                # Multi-bagger filtering logic
-                # Ensure we handle None values
+            for c in db_candidates:
                 roce = c.roce if c.roce is not None else 0
                 pe = c.pe_ratio if c.pe_ratio is not None else 100
                 debt = getattr(c, 'debt_to_equity', 1) 
                 debt = debt if debt is not None else 1
                 
+                # Criteria for inclusion: 
+                # 1. It matches our strict multibagger filters
+                # 2. OR it's one of our "Featured" high-quality large caps (like Reliance/HDFC)
+                is_featured = c.symbol in final_results
                 is_potential = (roce > 20 and pe < 30 and debt < 0.5)
                 
-                if is_potential:
+                if is_potential or is_featured:
                     persona = ScreenerService._assign_company_persona(c)
-                    results.append({
+                    # Use DB data to override or add new candidates
+                    final_results[c.symbol] = {
                         "symbol": c.symbol,
                         "name": getattr(c, 'name', c.symbol),
                         "market_cap": getattr(c, 'market_cap', 0),
@@ -49,16 +53,15 @@ class ScreenerService:
                         "sector": getattr(c, 'sector', 'General'),
                         "persona": persona["name"],
                         "varsity_tip": persona["tip"]
-                    })
+                    }
             
-            return results if results else ScreenerService._get_mock_candidates()
+            return list(final_results.values())
         except Exception as e:
             logger.error(f"Error in screener service: {e}")
-            return ScreenerService._get_mock_candidates()
+            return list(final_results.values())
 
     @staticmethod
     def _assign_company_persona(stock):
-        """Assigns a Zerodha Varsity-style persona to a company based on metrics."""
         roce = getattr(stock, 'roce', 0) or 0
         pe = getattr(stock, 'pe_ratio', 100) or 100
         growth = getattr(stock, 'revenue_growth_5y', 0) or 0
@@ -66,27 +69,16 @@ class ScreenerService:
         if roce > 30 and growth > 20:
             return {
                 "name": "The High-Octane Compounder",
-                "tip": "Companies with ROCE > 30% and high growth are rare. They build wealth by reinvesting profits at massive rates. Focus on the durability of their moat."
-            }
-        if roce > 20 and pe < 20:
-            return {
-                "name": "The Cash Machine",
-                "tip": "These are efficient businesses available at a fair price. High ROCE with low PE often indicates 'Value' play. Check if there's a temporary headwind."
-            }
-        if growth > 25:
-            return {
-                "name": "The Growth Beast",
-                "tip": "Revenue growth is the engine here. In the early stages of a multibagger, growth often precedes profitability. Watch for operating leverage."
+                "tip": "Companies with ROCE > 30% and high growth are rare."
             }
         return {
             "name": "The Quality Consistent",
-            "tip": "Slow and steady wins the race. These companies have consistent efficiency and clean balance sheets, acting as the bedrock of a portfolio."
+            "tip": "Slow and steady wins the race. "
         }
 
     @staticmethod
     def _calculate_conviction(stock):
-        """Simple logic to calculate a conviction score out of 100"""
-        score = 50 # Base
+        score = 50 
         roce = getattr(stock, 'roce', 0) or 0
         pe = getattr(stock, 'pe_ratio', 100) or 100
         growth = getattr(stock, 'revenue_growth_5y', 0) or 0
@@ -98,8 +90,7 @@ class ScreenerService:
 
     @staticmethod
     def _get_mock_candidates():
-        # Enhanced mock data with personas
-        stocks = [
+        return [
             {
                 "symbol": "RELIANCE",
                 "name": "Reliance Industries",
@@ -109,66 +100,86 @@ class ScreenerService:
                 "roe": 14.1,
                 "revenue_growth": 14.2,
                 "conviction_score": 88,
-                "sector": "Energy/Telecom"
+                "sector": "Energy/Telecom",
+                "persona": "The Bluechip Leader",
+                "varsity_tip": "Focus on their growing retail and telecom segments for long-term compounding."
             },
             {
                 "symbol": "HDFCBANK",
                 "name": "HDFC Bank Ltd",
                 "market_cap": 1250000,
                 "pe_ratio": 18.2,
-                "roce": 16.8,
-                "roe": 14.5,
+                "roce": 16.5,
+                "roe": 17.8,
                 "revenue_growth": 19.5,
                 "conviction_score": 92,
-                "sector": "Banking"
+                "sector": "Banking",
+                "persona": "The Quality Compounder",
+                "varsity_tip": "Consistent 15-20% growth over decades with superior asset quality."
             },
             {
-                "symbol": "TATAELXSI",
-                "name": "Tata Elxsi",
-                "market_cap": 45000,
-                "pe_ratio": 55.4,
-                "roce": 37.2,
-                "roe": 30.1,
-                "revenue_growth": 24.8,
+                "symbol": "TCS",
+                "name": "Tata Consultancy Services",
+                "market_cap": 1420000,
+                "pe_ratio": 28.4,
+                "roce": 45.2,
+                "roe": 39.1,
+                "revenue_growth": 12.8,
                 "conviction_score": 95,
-                "sector": "IT/Design"
+                "sector": "IT Services",
+                "persona": "The Efficiency King",
+                "varsity_tip": "Unmatched ROCE and dividend payouts make it a core portfolio staple."
             },
             {
-                "symbol": "VARUNBEV",
-                "name": "Varun Beverages",
-                "market_cap": 95000,
-                "pe_ratio": 62.1,
-                "roce": 28.5,
-                "roe": 22.4,
-                "revenue_growth": 32.1,
-                "conviction_score": 94,
-                "sector": "FMCG"
+                "symbol": "ICICIBANK",
+                "name": "ICICI Bank Ltd",
+                "market_cap": 750000,
+                "pe_ratio": 16.8,
+                "roce": 15.2,
+                "roe": 16.5,
+                "revenue_growth": 21.4,
+                "conviction_score": 90,
+                "sector": "Banking",
+                "persona": "The Growth Aggressor",
+                "varsity_tip": "Gaining market share from PSU banks with strong digital adoption."
+            },
+            {
+                "symbol": "INFY",
+                "name": "Infosys Ltd",
+                "market_cap": 650000,
+                "pe_ratio": 22.5,
+                "roce": 32.1,
+                "roe": 28.4,
+                "revenue_growth": 11.2,
+                "conviction_score": 85,
+                "sector": "IT Services",
+                "persona": "The Digital Transformer",
+                "varsity_tip": "Strong deal pipeline in Cloud and Generative AI spaces."
             },
             {
                 "symbol": "TITAN",
-                "name": "Titan Company",
+                "name": "Titan Company Ltd",
                 "market_cap": 310000,
-                "pe_ratio": 82.5,
-                "roce": 25.1,
-                "roe": 18.6,
-                "revenue_growth": 21.4,
-                "conviction_score": 91,
-                "sector": "Consumer Durables"
+                "pe_ratio": 85.2,
+                "roce": 24.1,
+                "roe": 30.5,
+                "revenue_growth": 25.6,
+                "conviction_score": 82,
+                "sector": "Consumer / Jewelry",
+                "persona": "The Luxury Monopoly",
+                "varsity_tip": "High PE is justified by brand dominance and secular growth in jewelry."
+            },
+            {
+                "symbol": "TATAMOTORS",
+                "name": "Tata Motors Ltd",
+                "market_cap": 340000,
+                "pe_ratio": 12.4,
+                "roce": 18.2,
+                "roe": 22.1,
+                "revenue_growth": 32.5,
+                "conviction_score": 89,
+                "sector": "Automobile",
+                "persona": "The EV Pioneer",
+                "varsity_tip": "Leading the Indian EV revolution while JLR turnaround drives cash flows."
             }
         ]
-        
-        results = []
-        for s in stocks:
-            # Create a simple object to satisfy getattr
-            class StockMock: pass
-            sm = StockMock()
-            for k, v in s.items(): 
-                setattr(sm, k, v)
-                if k == 'revenue_growth': 
-                    setattr(sm, 'revenue_growth_5y', v)
-            
-            persona = ScreenerService._assign_company_persona(sm)
-            s["persona"] = persona["name"]
-            s["varsity_tip"] = persona["tip"]
-            results.append(s)
-        return results

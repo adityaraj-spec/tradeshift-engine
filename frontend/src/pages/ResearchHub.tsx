@@ -57,17 +57,17 @@ const ResearchHub: React.FC = () => {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-black">
+      <div className="flex items-center justify-center min-h-screen bg-tv-bg-base dark:bg-black">
         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-primary"></div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen dark:bg-[#050505] dark:text-gray-100 light:bg-gray-100 relative overflow-hidden font-sans pb-12">
+    <div className="min-h-screen bg-tv-bg-pane dark:bg-[#050505] text-tv-text-primary dark:text-gray-100 relative overflow-x-hidden font-sans pb-12">
       {/* Dynamic Background */}
       <div className="absolute top-0 inset-x-0 h-[500px] w-full bg-gradient-to-b from-primary/10 via-blue-500/5 to-transparent pointer-events-none"></div>
-      <div className="absolute -top-[300px] -right-[200px] w-[600px] h-[600px] bg-primary/20 rounded-full blur-[120px] pointer-events-none"></div>
+      <div className="absolute -top-[300px] -right-[200px] w-[600px] h-[600px] bg-primary/20 rounded-full blur-[120px] pointer-events-none opacity-50 dark:opacity-100"></div>
       
       <div className="relative z-10 p-6 space-y-8 mt-4">
         {/* Header Section */}
@@ -101,24 +101,24 @@ const ResearchHub: React.FC = () => {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 w-full mt-4">
           
           {/* 3x3 Metrics Card */}
-          <div className="lg:col-span-2 bg-[#0a0a0a] border border-white/5 shadow-2xl rounded-3xl p-8 relative overflow-hidden">
+          <div className="lg:col-span-2 bg-white dark:bg-[#0a0a0a] border border-tv-border dark:border-white/5 shadow-xl dark:shadow-2xl rounded-3xl p-8 relative overflow-hidden">
              
              {/* Title & Actions */}
-             <div className="flex justify-between flex-wrap gap-4 items-center border-b border-white/5 pb-6 mb-6">
+             <div className="flex justify-between flex-wrap gap-4 items-center border-b border-tv-border dark:border-white/5 pb-6 mb-6">
                 <div>
-                   <h2 className="text-2xl font-black tracking-tight text-white flex items-center gap-3">
+                   <h2 className="text-2xl font-black tracking-tight text-tv-text-primary dark:text-white flex items-center gap-3">
                      {profile.fundamentals.current_price ? `₹${profile.fundamentals.current_price.toLocaleString()}` : ''}
-                     <span className="text-sm font-medium px-2 py-0.5 rounded-md bg-red-500/10 text-red-400 border border-red-500/20">
+                     <span className="text-sm font-medium px-2 py-0.5 rounded-md bg-red-500/10 text-red-600 dark:text-red-400 border border-red-500/20">
                        -1.2%
                      </span>
                    </h2>
-                   <p className="text-xs text-gray-500 mt-1 uppercase tracking-wider font-bold">NSE: {symbol} · BSE: 500{symbol?.length || '000'}</p>
+                   <p className="text-xs text-tv-text-secondary dark:text-gray-500 mt-1 uppercase tracking-wider font-bold">NSE: {symbol} · BSE: 500{symbol?.length || '000'}</p>
                 </div>
                 <div className="flex items-center gap-3">
-                   <button className="px-4 py-2 bg-white/5 hover:bg-white/10 text-white text-xs font-bold rounded-lg border border-white/10 transition-colors uppercase tracking-wider">
+                   <button className="px-4 py-2 bg-tv-bg-pane dark:bg-white/5 hover:bg-tv-border dark:hover:bg-white/10 text-tv-text-primary dark:text-white text-xs font-bold rounded-lg border border-tv-border dark:border-white/10 transition-colors uppercase tracking-wider">
                      Export to Excel
                    </button>
-                   <button className="px-6 py-2 bg-primary text-black text-xs font-black rounded-lg shadow-lg hover:bg-primary/90 transition-all uppercase tracking-wider">
+                   <button className="px-6 py-2 bg-primary text-white dark:text-black text-xs font-black rounded-lg shadow-lg hover:bg-primary/90 transition-all uppercase tracking-wider">
                      + Follow
                    </button>
                 </div>
@@ -126,56 +126,56 @@ const ResearchHub: React.FC = () => {
 
              {/* 3 columns grid */}
              <div className="grid grid-cols-2 md:grid-cols-3 gap-y-8 gap-x-4">
-                <div className="flex justify-between items-center md:items-start md:flex-col md:gap-2 border-b border-white/5 pb-3 md:border-none md:pb-0">
-                  <span className="text-gray-500 text-xs uppercase font-bold tracking-wider">Market Cap</span>
-                  <span className="text-white font-black text-xl">₹{profile.fundamentals.market_cap?.toLocaleString()} <span className="text-xs text-gray-500 font-bold uppercase">Cr.</span></span>
+                <div className="flex justify-between items-center md:items-start md:flex-col md:gap-2 border-b border-tv-border dark:border-white/5 pb-3 md:border-none md:pb-0">
+                  <span className="text-tv-text-secondary dark:text-gray-500 text-xs uppercase font-bold tracking-wider">Market Cap</span>
+                  <span className="text-tv-text-primary dark:text-white font-black text-xl">₹{profile.fundamentals.market_cap?.toLocaleString()} <span className="text-xs text-tv-text-secondary dark:text-gray-500 font-bold uppercase">Cr.</span></span>
                 </div>
                 
-                <div className="flex justify-between items-center md:items-start md:flex-col md:gap-2 border-b border-white/5 pb-3 md:border-none md:pb-0">
-                  <span className="text-gray-500 text-xs uppercase font-bold tracking-wider">Current Price</span>
-                  <span className="text-white font-black text-xl">₹{profile.fundamentals.current_price || 'N/A'}</span>
+                <div className="flex justify-between items-center md:items-start md:flex-col md:gap-2 border-b border-tv-border dark:border-white/5 pb-3 md:border-none md:pb-0">
+                  <span className="text-tv-text-secondary dark:text-gray-500 text-xs uppercase font-bold tracking-wider">Current Price</span>
+                  <span className="text-tv-text-primary dark:text-white font-black text-xl">₹{profile.fundamentals.current_price || 'N/A'}</span>
                 </div>
 
-                <div className="flex justify-between items-center md:items-start md:flex-col md:gap-2 border-b border-white/5 pb-3 md:border-none md:pb-0">
-                  <span className="text-gray-500 text-xs uppercase font-bold tracking-wider">High / Low</span>
-                  <span className="text-white font-black text-xl">₹{profile.fundamentals.high_52w || 'N/A'} <span className="text-gray-600 font-normal">/</span> {profile.fundamentals.low_52w || 'N/A'}</span>
+                <div className="flex justify-between items-center md:items-start md:flex-col md:gap-2 border-b border-tv-border dark:border-white/5 pb-3 md:border-none md:pb-0">
+                  <span className="text-tv-text-secondary dark:text-gray-500 text-xs uppercase font-bold tracking-wider">High / Low</span>
+                  <span className="text-tv-text-primary dark:text-white font-black text-xl">₹{profile.fundamentals.high_52w || 'N/A'} <span className="text-gray-600 dark:text-gray-500 font-normal">/</span> {profile.fundamentals.low_52w || 'N/A'}</span>
                 </div>
 
-                <div className="flex justify-between items-center md:items-start md:flex-col md:gap-2 border-b border-white/5 pb-3 md:border-none md:pb-0">
-                  <span className="text-gray-500 text-xs uppercase font-bold tracking-wider">Stock P/E</span>
-                  <span className="text-white font-black text-xl">{profile.fundamentals.pe_ratio}</span>
+                <div className="flex justify-between items-center md:items-start md:flex-col md:gap-2 border-b border-tv-border dark:border-white/5 pb-3 md:border-none md:pb-0">
+                  <span className="text-tv-text-secondary dark:text-gray-500 text-xs uppercase font-bold tracking-wider">Stock P/E</span>
+                  <span className="text-tv-text-primary dark:text-white font-black text-xl">{profile.fundamentals.pe_ratio}</span>
                 </div>
 
-                <div className="flex justify-between items-center md:items-start md:flex-col md:gap-2 border-b border-white/5 pb-3 md:border-none md:pb-0">
-                  <span className="text-gray-500 text-xs uppercase font-bold tracking-wider">Book Value</span>
-                  <span className="text-white font-black text-xl">₹{profile.fundamentals.book_value || 'N/A'}</span>
+                <div className="flex justify-between items-center md:items-start md:flex-col md:gap-2 border-b border-tv-border dark:border-white/5 pb-3 md:border-none md:pb-0">
+                  <span className="text-tv-text-secondary dark:text-gray-500 text-xs uppercase font-bold tracking-wider">Book Value</span>
+                  <span className="text-tv-text-primary dark:text-white font-black text-xl">₹{profile.fundamentals.book_value || 'N/A'}</span>
                 </div>
 
-                <div className="flex justify-between items-center md:items-start md:flex-col md:gap-2 border-b border-white/5 pb-3 md:border-none md:pb-0">
-                  <span className="text-gray-500 text-xs uppercase font-bold tracking-wider">Dividend Yield</span>
-                  <span className="text-white font-black text-xl">{profile.fundamentals.dividend_yield}%</span>
+                <div className="flex justify-between items-center md:items-start md:flex-col md:gap-2 border-b border-tv-border dark:border-white/5 pb-3 md:border-none md:pb-0">
+                  <span className="text-tv-text-secondary dark:text-gray-500 text-xs uppercase font-bold tracking-wider">Dividend Yield</span>
+                  <span className="text-tv-text-primary dark:text-white font-black text-xl">{profile.fundamentals.dividend_yield}%</span>
                 </div>
 
-                <div className="flex justify-between items-center md:items-start md:flex-col md:gap-2 border-b border-white/5 pb-3 md:border-none md:pb-0 mt-2 md:mt-0">
-                  <span className="text-gray-500 text-xs uppercase font-bold tracking-wider">ROCE</span>
-                  <span className="text-white font-black text-xl">{profile.fundamentals.roce}%</span>
+                <div className="flex justify-between items-center md:items-start md:flex-col md:gap-2 border-b border-tv-border dark:border-white/5 pb-3 md:border-none md:pb-0 mt-2 md:mt-0">
+                  <span className="text-tv-text-secondary dark:text-gray-500 text-xs uppercase font-bold tracking-wider">ROCE</span>
+                  <span className="text-tv-text-primary dark:text-white font-black text-xl">{profile.fundamentals.roce}%</span>
                 </div>
 
-                <div className="flex justify-between items-center md:items-start md:flex-col md:gap-2 border-b border-white/5 pb-3 md:border-none md:pb-0 mt-2 md:mt-0">
-                  <span className="text-gray-500 text-xs uppercase font-bold tracking-wider">ROE</span>
-                  <span className="text-white font-black text-xl">{profile.fundamentals.roe}%</span>
+                <div className="flex justify-between items-center md:items-start md:flex-col md:gap-2 border-b border-tv-border dark:border-white/5 pb-3 md:border-none md:pb-0 mt-2 md:mt-0">
+                  <span className="text-tv-text-secondary dark:text-gray-500 text-xs uppercase font-bold tracking-wider">ROE</span>
+                  <span className="text-tv-text-primary dark:text-white font-black text-xl">{profile.fundamentals.roe}%</span>
                 </div>
 
                 <div className="flex justify-between items-center md:items-start md:flex-col md:gap-2 mt-2 md:mt-0">
-                  <span className="text-gray-500 text-xs uppercase font-bold tracking-wider">Face Value</span>
-                  <span className="text-white font-black text-xl">₹{profile.fundamentals.face_value || 'N/A'}</span>
+                  <span className="text-tv-text-secondary dark:text-gray-500 text-xs uppercase font-bold tracking-wider">Face Value</span>
+                  <span className="text-tv-text-primary dark:text-white font-black text-xl">₹{profile.fundamentals.face_value || 'N/A'}</span>
                 </div>
              </div>
              
              {/* Edit Ratios Input mock */}
-             <div className="mt-8 pt-6 border-t border-white/5 flex items-center justify-between">
+             <div className="mt-8 pt-6 border-t border-tv-border dark:border-white/5 flex items-center justify-between">
                 <div className="flex-1 max-w-sm relative">
-                  <input type="text" placeholder="Add ratio to table (eg. Promoter holding)" className="w-full bg-black/40 border border-white/10 rounded-lg py-2.5 px-4 text-xs text-white focus:border-primary/50 outline-none" />
+                  <input type="text" placeholder="Add ratio to table (eg. Promoter holding)" className="w-full bg-tv-bg-pane dark:bg-black/40 border border-tv-border dark:border-white/10 rounded-lg py-2.5 px-4 text-xs text-tv-text-primary dark:text-white focus:border-primary/50 outline-none" />
                 </div>
                 <button className="text-primary text-xs font-bold uppercase tracking-wider flex items-center gap-2 hover:bg-primary/10 px-3 py-1.5 rounded-md transition-colors">
                   EDIT RATIOS
@@ -184,26 +184,26 @@ const ResearchHub: React.FC = () => {
           </div>
 
           {/* About Section */}
-          <div className="bg-[#0a0a0a] border border-white/5 shadow-2xl rounded-3xl p-8 space-y-8 h-full">
+          <div className="bg-white dark:bg-[#0a0a0a] border border-tv-border dark:border-white/5 shadow-xl dark:shadow-2xl rounded-3xl p-8 space-y-8 h-full">
               <div>
-                <h3 className="text-sm font-black tracking-widest uppercase text-white mb-4 flex items-center gap-2">
-                  About <button className="text-[10px] text-blue-400 font-normal hover:underline lowercase tracking-normal">[edit]</button>
+                <h3 className="text-sm font-black tracking-widest uppercase text-tv-text-primary dark:text-white mb-4 flex items-center gap-2">
+                  About <button className="text-[10px] text-blue-500 dark:text-blue-400 font-normal hover:underline lowercase tracking-normal">[edit]</button>
                 </h3>
-                <p className="text-sm text-gray-400 leading-relaxed font-medium">
+                <p className="text-sm text-tv-text-secondary dark:text-gray-400 leading-relaxed font-medium">
                   {profile.fundamentals.about || `${symbol} is a publicly traded company on the Indian stock exchanges.`}
                 </p>
               </div>
               
               {profile.fundamentals.key_points && (
                 <div>
-                  <h3 className="text-sm font-black tracking-widest uppercase text-white mb-4 flex items-center gap-2">
-                    Key Points <button className="text-[10px] text-blue-400 font-normal hover:underline lowercase tracking-normal">[edit]</button>
+                  <h3 className="text-sm font-black tracking-widest uppercase text-tv-text-primary dark:text-white mb-4 flex items-center gap-2">
+                    Key Points <button className="text-[10px] text-blue-500 dark:text-blue-400 font-normal hover:underline lowercase tracking-normal">[edit]</button>
                   </h3>
                   <div className="space-y-5 text-sm">
                     {Object.entries(profile.fundamentals.key_points).map(([key, val]) => (
                        <div key={key}>
-                         <span className="font-bold text-gray-200 block mb-1 text-[15px]">{key}</span>
-                         <span className="text-gray-400 whitespace-pre-line leading-relaxed block">{val as string}</span>
+                         <span className="font-bold text-tv-text-primary dark:text-gray-200 block mb-1 text-[15px]">{key}</span>
+                         <span className="text-tv-text-secondary dark:text-gray-400 whitespace-pre-line leading-relaxed block">{val as string}</span>
                        </div>
                     ))}
                   </div>
@@ -236,28 +236,28 @@ const ResearchHub: React.FC = () => {
                 <CalendarDays className="w-5 h-5 text-primary" />
                 <h2 className="text-xl font-semibold">Quarterly Performance</h2>
               </div>
-              <div className="bg-[#0a0a0a] rounded-2xl border border-white/5 overflow-hidden">
+              <div className="bg-white dark:bg-[#0a0a0a] rounded-xl border border-tv-border dark:border-white/5 overflow-hidden shadow-sm dark:shadow-none">
                 <div className="overflow-x-auto custom-scrollbar">
                   <table className="w-full text-left border-collapse">
                     <thead>
-                      <tr className="border-b border-white/10 bg-white/[0.02]">
-                        <th className="py-4 px-6 text-xs font-bold uppercase tracking-wider text-gray-400">Quarter</th>
+                      <tr className="border-b border-tv-border dark:border-white/10 bg-tv-bg-pane dark:bg-white/[0.02]">
+                        <th className="py-4 px-6 text-xs font-bold uppercase tracking-wider text-tv-text-secondary dark:text-gray-400">Quarter</th>
                         {profile.quarterly_performance.map((q: any) => (
-                          <th key={q.quarter} className="py-4 px-6 text-xs font-bold tracking-wider text-white text-right">{q.quarter}</th>
+                          <th key={q.quarter} className="py-4 px-6 text-xs font-bold tracking-wider text-tv-text-primary dark:text-white text-right">{q.quarter}</th>
                         ))}
                       </tr>
                     </thead>
                     <tbody className="text-sm">
-                      <tr className="border-b border-white/5 hover:bg-white/[0.02] transition-colors">
-                        <td className="py-4 px-6 font-medium text-gray-300">Revenue <span className="text-[10px] text-gray-500 ml-1">(Cr.)</span></td>
+                      <tr className="border-b border-tv-border dark:border-white/5 hover:bg-tv-bg-pane dark:hover:bg-white/[0.02] transition-colors">
+                        <td className="py-4 px-6 font-medium text-tv-text-secondary dark:text-gray-300">Revenue <span className="text-[10px] text-tv-text-secondary/60 dark:text-gray-500 ml-1">(Cr.)</span></td>
                         {profile.quarterly_performance.map((q: any) => (
-                          <td key={`rev-${q.quarter}`} className="py-4 px-6 text-right font-bold text-white">₹{q.revenue.toLocaleString()}</td>
+                          <td key={`rev-${q.quarter}`} className="py-4 px-6 text-right font-bold text-tv-text-primary dark:text-white">₹{q.revenue.toLocaleString()}</td>
                         ))}
                       </tr>
-                      <tr className="hover:bg-white/[0.02] transition-colors">
-                        <td className="py-4 px-6 font-medium text-gray-300">Net Profit <span className="text-[10px] text-gray-500 ml-1">(Cr.)</span></td>
+                      <tr className="hover:bg-tv-bg-pane dark:hover:bg-white/[0.02] transition-colors">
+                        <td className="py-4 px-6 font-medium text-tv-text-secondary dark:text-gray-300">Net Profit <span className="text-[10px] text-tv-text-secondary/60 dark:text-gray-500 ml-1">(Cr.)</span></td>
                         {profile.quarterly_performance.map((q: any) => (
-                          <td key={`np-${q.quarter}`} className="py-4 px-6 text-right font-bold text-green-400">₹{q.net_profit.toLocaleString()}</td>
+                          <td key={`np-${q.quarter}`} className="py-4 px-6 text-right font-bold text-green-600 dark:text-green-400">₹{q.net_profit.toLocaleString()}</td>
                         ))}
                       </tr>
                     </tbody>
@@ -311,13 +311,13 @@ const ResearchHub: React.FC = () => {
                     href={item.url} 
                     target="_blank" 
                     rel="noopener noreferrer"
-                    className="block group bg-[#0a0a0a] p-5 rounded-2xl border border-white/5 hover:border-primary/30 transition-all hover:-translate-y-1 hover:shadow-lg"
+                    className="block group bg-white dark:bg-[#0a0a0a] p-5 rounded-xl border border-tv-border dark:border-white/5 hover:border-primary/30 transition-all hover:-translate-y-1 hover:shadow-lg"
                   >
                     <div className="flex justify-between items-start gap-4 mb-2">
-                      <h4 className="font-bold text-sm text-white group-hover:text-primary transition-colors line-clamp-2 leading-relaxed">
+                      <h4 className="font-bold text-sm text-tv-text-primary dark:text-white group-hover:text-primary transition-colors line-clamp-2 leading-relaxed">
                         {item.title}
                       </h4>
-                      <ArrowRight className="w-4 h-4 text-gray-600 group-hover:text-primary flex-shrink-0 transition-colors" />
+                      <ArrowRight className="w-4 h-4 text-tv-text-secondary dark:text-gray-600 group-hover:text-primary flex-shrink-0 transition-colors" />
                     </div>
                     <p className="text-xs text-gray-500 line-clamp-2 mb-3 leading-relaxed">
                       {item.description}
@@ -338,7 +338,7 @@ const ResearchHub: React.FC = () => {
                   </a>
                 ))
               ) : (
-                <div className="text-center py-8 bg-[#0a0a0a] rounded-2xl border border-white/5 text-sm text-gray-500">
+                <div className="text-center py-8 bg-white dark:bg-[#0a0a0a] rounded-xl border border-tv-border dark:border-white/5 text-sm text-tv-text-secondary dark:text-gray-500 shadow-sm dark:shadow-none">
                   No recent insights available for this symbol.
                 </div>
               )}

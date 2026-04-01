@@ -1,0 +1,119 @@
+.chart-tabs-container {
+    display: flex;
+    align-items: center;
+    background: transparent;
+    overflow-x: auto;
+    scrollbar-width: none;
+    gap: 4px;
+    transition: all 0.3s ease;
+    flex: 1;
+}
+
+.chart-tabs-container::-webkit-scrollbar {
+    display: none;
+}
+
+.chart-tabs-list {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+}
+
+.chart-tab {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    min-width: 80px;
+    max-width: 150px;
+    height: 24px;
+    padding: 0 8px;
+    border-radius: 4px;
+    background: transparent;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    color: var(--tv-text-secondary, #b2b5be);
+    border: 1px solid transparent;
+}
+
+.chart-tab:hover {
+    background: rgba(255, 255, 255, 0.05);
+    color: var(--tv-text-primary, #d1d4dc);
+}
+
+.chart-tab.active {
+    background: var(--tv-bg-pane, #131722);
+    border: 1px solid var(--tv-border, #1e222d);
+    color: #2962ff;
+    font-weight: 700;
+}
+
+.chart-tab-content {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex: 1;
+    overflow: hidden;
+    white-space: nowrap;
+}
+
+.chart-tab-symbol {
+    font-size: 11px;
+    letter-spacing: -0.01em;
+}
+
+.chart-tab-timeframe {
+    font-size: 9px;
+    opacity: 0.4;
+    font-weight: 500;
+}
+
+.chart-tab-close {
+    opacity: 0;
+    width: 16px;
+    height: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 3px;
+}
+
+.chart-tab:hover .chart-tab-close,
+.chart-tab.active .chart-tab-close {
+    opacity: 0.6;
+}
+
+.chart-tab-close:hover {
+    background: rgba(242, 54, 69, 0.15);
+    color: #f23645 !important;
+    opacity: 1 !important;
+}
+
+.chart-tab-active-indicator {
+    display: none;
+}
+
+.chart-tab.active .chart-tab-active-indicator {
+    background: #2962ff;
+    box-shadow: 0 0 8px rgba(41, 98, 255, 0.4);
+}
+
+.chart-tab-add {
+    width: 22px;
+    height: 22px;
+    border-radius: 4px;
+    border: none;
+    background: transparent;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--tv-text-secondary);
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.chart-tab-add:hover {
+    background: rgba(41, 98, 255, 0.1);
+    color: #2962ff;
+    transform: rotate(90deg);
+}

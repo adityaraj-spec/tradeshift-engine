@@ -12,7 +12,7 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U user -d tradeshift"]
+      test: [ "CMD-SHELL", "pg_isready -U user -d tradeshift" ]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -24,7 +24,7 @@ services:
     ports:
       - "6380:6379"
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: [ "CMD", "redis-cli", "ping" ]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -47,6 +47,9 @@ services:
   backend:
     build: ./backend
     container_name: tradeshift_backend
+    env_file:
+      - ./backend/.env
+    command: uvicorn main:app --host 0.0.0.0 --port 8000 --reload
     volumes:
       - ./backend:/app
       - ./backend/data:/app/data
@@ -81,12 +84,7 @@ services:
       - SHOONYA_API_SECRET=${SHOONYA_API_SECRET}
       - SHOONYA_TOTP_SECRET=${SHOONYA_TOTP_SECRET}
       - SHOONYA_IMEI=${SHOONYA_IMEI}
-      # Email
-      - MAIL_USERNAME=${MAIL_USERNAME}
-      - MAIL_PASSWORD=${MAIL_PASSWORD}
-      - MAIL_FROM=${MAIL_FROM}
-      - MAIL_PORT=${MAIL_PORT}
-      - MAIL_SERVER=${MAIL_SERVER}
+      - SHOONYA_IMEI=${SHOONYA_IMEI}
       # Inngest
       - INNGEST_SIGNING_KEY=mock_key
       - INNGEST_DEV=1
@@ -111,7 +109,9 @@ services:
     ports:
       - "5173:5173"
     environment:
-      - VITE_API_URL=http://localhost:8000
+      - VITE_API_URL=http://backend:8000
+      - VITE_SUPABASE_URL=${VITE_SUPABASE_URL}
+      - VITE_SUPABASE_ANON_KEY=${VITE_SUPABASE_ANON_KEY}
       - CHOKIDAR_USEPOLLING=true
 
   # 7. News Worker
@@ -137,6 +137,22 @@ services:
       - GEMINI_API_KEY=${GEMINI_API_KEY}
     volumes:
       - ./backend:/app
+
+  # 8. AI ChatBot (FinGPT / RAG)
+  chatbot:
+    build: 
+      context: ./backend/chatbot
+      dockerfile: Dockerfile
+    container_name: tradeshift_chatbot
+    volumes:
+      - ./backend/chatbot:/app
+      - ./backend/chatbot/chroma_db:/app/chroma_db
+    ports:
+      - "8001:8001"
+    environment:
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - CHATBOT_API_KEY=tradeshift-local-key
+    restart: always
 
 volumes:
   postgres_data:

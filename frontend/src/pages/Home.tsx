@@ -1,18 +1,16 @@
 import { useState, useMemo, useEffect, useCallback, useRef } from 'react';
-import { CalendarRange, X } from 'lucide-react';
+import { X } from 'lucide-react';
 import TopToolbar from '../components/layout/TopToolbar';
 import ProChart from '../components/ProChart/ProChart';
 import { MultiChartGrid } from '../components/ProChart/MultiChartGrid';
 import type { GameData } from '../components/ProChart/ProChart';
 import { useMultiChartStore } from '../store/useMultiChartStore';
+import type { TimeframeId } from '../store/useMultiChartStore';
 import { fetchHistoricalCandles } from '../services/MarketDataService';
 import TradePanel from '../components/TradePanel/TradePanel';
 import NewsPanel from '../components/features/NewsPanel';
 import ObjectTreePanel from '../components/ProChart/ObjectTreePanel';
-import TradingViewWidget from '@/components/ui/TradingViewWidget';
-import { NEWS_WIDGET_CONFIG } from '@/lib/constants';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Sparkles } from 'lucide-react';
+import ReplayToolbar from '../components/features/ReplayToolbar';
 import { useGame } from '../hooks/useGame';
 import type { DrawingToolId } from '../hooks/useDrawingTools';
 import { toast } from 'sonner';
@@ -63,7 +61,8 @@ const Home = () => {
     currentPrice, selectedSymbol, isPlaying, togglePlay,
     isReplayActive, toggleReplay,
     selectedDate, availableDates, setDate,
-    speed, setSpeed, modifyOrder, setSymbol
+    speed, setSpeed, modifyOrder, setSymbol,
+    currentTime, simulatedIndices, replayTicks
   } = useGame();
   const [showExitAllConfirm, setShowExitAllConfirm] = useState(false);
   const [pendingOrder, setPendingOrder] = useState<any | null>(null);
@@ -71,7 +70,7 @@ const Home = () => {
   const [activeDrawingTool, setActiveDrawingTool] = useState<DrawingToolId>(null);
   const [isLibraryOpen, setIsLibraryOpen] = useState(false);
 
-  const { charts, activeChartId, setChartData } = useMultiChartStore();
+  const { charts, activeChartId, setChartData, activeTimeframe, setActiveTimeframe } = useMultiChartStore();
 
   // 1. Sync useGame's selectedSymbol with the active chart
   const prevActiveChartIdRef = useRef(activeChartId);
@@ -99,14 +98,14 @@ const Home = () => {
       const visibleCharts = charts.slice(0, layoutType);
 
       for (const chart of visibleCharts) {
-        const fetchKey = `${chart.id}-${chart.symbol}-${selectedDate}`;
+        const fetchKey = `${chart.id}-${chart.symbol}-${selectedDate}-${activeTimeframe}`;
         
-        // Fetch if symbol/date changed and it's not currently being fetched
+        // Fetch if symbol/date/timeframe changed and it's not currently being fetched
         if (chart.symbol && lastFetchedRef.current[chart.id] !== fetchKey) {
           lastFetchedRef.current[chart.id] = fetchKey;
           try {
-            console.log(`🌐 Fetching independent data for Slot ${chart.id}: ${chart.symbol}`);
-            const candles = await fetchHistoricalCandles(chart.symbol, 500, selectedDate || '');
+            console.log(`🌐 Fetching ${activeTimeframe} data for Slot ${chart.id}: ${chart.symbol}`);
+            const candles = await fetchHistoricalCandles(chart.symbol, 500, selectedDate || '', activeTimeframe);
             setChartData(chart.id, candles);
           } catch (err) {
             console.error(`❌ Failed to fetch data for ${chart.symbol} in slot ${chart.id}:`, err);
@@ -118,7 +117,7 @@ const Home = () => {
     };
 
     fetchVisibleCharts();
-  }, [charts, selectedDate, setChartData]);
+  }, [charts, selectedDate, setChartData, activeTimeframe]);
 
   // 3. Force refresh data for all charts when symbol changes in store
   // (Handled by the effect above since candleData is cleared when symbol changes in store)
@@ -126,26 +125,15 @@ const Home = () => {
 
 
   const mappedCandles = useMemo(() => {
-    const data = [...historicalCandles].filter(c => 'open' in c && c.open !== undefined).map(c => ({
-      time: c.time as number,
+    return historicalCandles.filter(c => c && typeof c === 'object' && 'open' in c && c.open !== undefined).map(c => ({
+      time: (c.time as number) || 0,
       open: c.open,
       high: c.high,
       low: c.low,
       close: c.close,
       volume: c.volume
     }));
-    if (currentCandle && 'open' in currentCandle && currentCandle.open !== undefined) {
-      data.push({
-        time: currentCandle.time as number,
-        open: currentCandle.open,
-        high: currentCandle.high,
-        low: currentCandle.low,
-        close: currentCandle.close,
-        volume: currentCandle.volume
-      });
-    }
-    return data;
-  }, [historicalCandles, currentCandle]);
+  }, [historicalCandles]);
 
   // Memoized callbacks for chart props
   const onToggleLibraryCb = useCallback(() => setIsLibraryOpen(false), []);
@@ -167,11 +155,13 @@ const Home = () => {
     togglePlay, isReplayActive, toggleReplay,
     selectedDate, availableDates, setDate,
     speed, setSpeed, trades, modifyOrder,
+    currentTime, simulatedIndices, replayTicks
   } as GameData), [
     currentPrice, currentCandle, isPlaying, selectedSymbol,
     togglePlay, isReplayActive, toggleReplay,
     selectedDate, availableDates, setDate,
     speed, setSpeed, trades, modifyOrder,
+    currentTime, simulatedIndices, replayTicks
   ]);
 
   // Memoized chartProps for MultiChartGrid
@@ -292,40 +282,9 @@ const Home = () => {
                 <h3 className="text-xs font-black uppercase">Market News</h3>
                 <button onClick={() => setIsNewsOpen(false)}><X className="w-4 h-4" /></button>
               </div>
-              <Tabs defaultValue="live" className="flex flex-col h-full">
-                {/* ... rest of the tabs ... */}
-                <div className="p-4 border-b border-white/5">
-                  <TabsList className="grid w-full grid-cols-2 bg-black/40">
-                    <TabsTrigger value="live" className="text-[10px] font-black uppercase tracking-widest data-[state=active]:bg-primary data-[state=active]:text-black flex items-center gap-1.5">
-                      <span className="relative flex h-2 w-2">
-                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-                        <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
-                      </span>
-                      Live Pulse
-                    </TabsTrigger>
-                    <TabsTrigger value="ai" className="text-[10px] font-black uppercase tracking-widest data-[state=active]:bg-primary data-[state=active]:text-black gap-1.5">
-                      <Sparkles className="w-3 h-3 text-orange-400 animate-pulse" />
-                      FinGPT Explainer
-                      <span className="bg-black/20 text-[7px] px-1 rounded ml-1 animate-bounce">USP</span>
-                    </TabsTrigger>
-                  </TabsList>
-                </div>
-
-                <TabsContent value="live" className="flex-1 overflow-hidden mt-0">
-                  <div className="h-full p-2">
-                    <TradingViewWidget
-                      title=""
-                      scriptUrl="https://s3.tradingview.com/external-embedding/embed-widget-timeline.js"
-                      config={NEWS_WIDGET_CONFIG}
-                      height={800}
-                    />
-                  </div>
-                </TabsContent>
-
-                <TabsContent value="ai" className="flex-1 overflow-hidden mt-0">
-                  <NewsPanel />
-                </TabsContent>
-              </Tabs>
+              <div className="flex-1 overflow-hidden">
+                <NewsPanel />
+              </div>
             </div>
           )}
         </div>
@@ -411,7 +370,7 @@ const Home = () => {
       {/* EXIT ALL CONFIRMATION DIALOG */}
       {showExitAllConfirm && (
         <div className="fixed inset-0 z-[110] flex items-center justify-center bg-black/80 backdrop-blur-md animate-in fade-in duration-300 p-4">
-          <div className="bg-[#121212] border border-[#f23645]/30 rounded-2xl w-full max-w-sm overflow-hidden shadow-[0_0_50px_rgba(242,54,69,0.2)] animate-in zoom-in-95 duration-200">
+          <div className="bg-[#121212] border border-[#f23645]/30 rounded-md w-full max-w-sm overflow-hidden shadow-[0_0_50px_rgba(242,54,69,0.2)] animate-in zoom-in-95 duration-200">
             <div className="p-8 flex flex-col items-center text-center gap-6">
               <div className="w-16 h-16 bg-[#f23645]/10 rounded-full flex items-center justify-center">
                 <X className="w-8 h-8 text-[#f23645] animate-pulse" />
@@ -446,7 +405,7 @@ const Home = () => {
       {/* ORDER CONFIRMATION DIALOG */}
       {pendingOrder && (
         <div className="fixed inset-0 z-[120] flex items-center justify-center bg-black/80 backdrop-blur-md animate-in fade-in duration-300 p-4">
-          <div className="bg-[#121212] border border-tv-primary/30 rounded-2xl w-full max-w-sm overflow-hidden shadow-[0_0_50px_rgba(43,209,255,0.1)] animate-in zoom-in-95 duration-200">
+          <div className="bg-[#121212] border border-tv-primary/30 rounded-md w-full max-w-sm overflow-hidden shadow-[0_0_50px_rgba(43,209,255,0.1)] animate-in zoom-in-95 duration-200">
             <div className="p-8 flex flex-col gap-6">
               <div className="flex flex-col gap-2 text-center">
                 <h3 className="font-black text-xl uppercase tracking-widest text-white">Confirm Order</h3>
@@ -516,16 +475,25 @@ const Home = () => {
         </div>
       )}
 
+      <ReplayToolbar />
+
       {/* BOTTOM FOOTER */}
       <div className="h-8 border-t-4 border-tv-border bg-tv-bg-base flex items-center justify-between px-4 text-xs font-semibold text-tv-text-secondary select-none flex-shrink-0">
-        {/* Bottom Left: Ranges */}
-        <div className="flex items-center space-x-3">
-          {['1D', '5D', '1M', '3M', '6M', 'YTD', '1Y', '5Y', 'All'].map((range) => (
-            <span key={range} className="hover:text-blue-500 cursor-pointer transition-colors px-1">
-              {range}
+        {/* Bottom Left: Timeframe Intervals */}
+        <div className="flex items-center space-x-1">
+          {(['1min', '3min', '5min', '15min', '30min', '1hr'] as TimeframeId[]).map((tf) => (
+            <span
+              key={tf}
+              onClick={() => setActiveTimeframe(tf)}
+              className={`px-2 py-0.5 rounded cursor-pointer transition-all duration-200 font-semibold text-[11px] uppercase tracking-wider ${
+                activeTimeframe === tf
+                  ? 'bg-blue-500/20 text-blue-400 border border-blue-500/40 shadow-[0_0_8px_rgba(59,130,246,0.15)]'
+                  : 'hover:text-blue-400 hover:bg-white/5 text-tv-text-secondary'
+              }`}
+            >
+              {tf}
             </span>
           ))}
-          <CalendarRange size={14} className="cursor-pointer hover:text-tv-text-primary ml-2" />
         </div>
 
         {/* Bottom Right: Time Info */}

@@ -1,99 +1,72 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
-import { login as apiLogin, register as apiRegister, logout as apiLogout, checkAuthStatus } from '@/services/AuthService';
+import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import axios from 'axios';
 
-interface UserProfile {
-    email: string;
-    full_name?: string;
-    id?: number;
+interface User {
+  id: number;
+  email: string;
+  full_name?: string;
+  country?: string;
+  investment_goals?: string;
+  risk_tolerance?: string;
+  preferred_industries?: string;
 }
 
 interface AuthContextType {
-    user: UserProfile | null;
-    login: (data: any) => Promise<void>;
-    register: (data: any) => Promise<void>;
-    logout: () => void;
-    isAuthenticated: boolean;
-    isLoading: boolean;
+  user: User | null;
+  loading: boolean;
+  login: (credentials: any) => Promise<void>;
+  register: (data: any) => Promise<void>;
+  logout: () => Promise<void>;
+  checkAuth: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-export const AuthProvider: React.FC<{ children: React.ReactNode; }> = ({ children }) => {
-    // HYBRID STRATEGY: Load initial state from LocalStorage for speed
-    const [user, setUser] = useState<UserProfile | null>(() => {
-        const savedUser = localStorage.getItem('user_profile');
-        return savedUser ? JSON.parse(savedUser) : null;
-    });
-    const [isAuthenticated, setIsAuthenticated] = useState<boolean>(!!user);
-    const [isLoading, setIsLoading] = useState<boolean>(true);
+export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+  const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
 
-    // BACKGROUND CHECK: Verify if the cookie is actually valid
-    useEffect(() => {
-        const verifySession = async () => {
-            // Only verify if we have a reason to believe a session exists (LocalStorage flag)
-            // This avoids the "noisy" 401 error in the console for unauthenticated users
-            if (!user) {
-                setIsLoading(false);
-                return;
-            }
+  const checkAuth = async () => {
+    try {
+      const response = await axios.get('/auth/me');
+      setUser(response.data);
+    } catch (error) {
+      setUser(null);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-            try {
-                const userData = await checkAuthStatus();
-                // If successful, update local state (sync)
-                setUser(userData);
-                localStorage.setItem('user_profile', JSON.stringify(userData));
-                setIsAuthenticated(true);
-            } catch (error) {
-                console.log("⚠️ Backend session invalid. Clearing local state.");
-                // Token expired or invalid -> Clear local state
-                localStorage.removeItem('user_profile');
-                setUser(null);
-                setIsAuthenticated(false);
-            } finally {
-                setIsLoading(false);
-            }
-        };
+  useEffect(() => {
+    checkAuth();
+  }, []);
 
-        verifySession();
-    }, []);
+  const login = async (credentials: any) => {
+    const response = await axios.post('/auth/login', credentials);
+    setUser(response.data);
+  };
 
-    const login = async (data: any) => {
-        const userData = await apiLogin(data);
-        // Save minimal profile to LocalStorage (No sensitive tokens!)
-        setUser(userData);
-        localStorage.setItem('user_profile', JSON.stringify(userData));
-        setIsAuthenticated(true);
-    };
+  const register = async (data: any) => {
+    const response = await axios.post('/auth/register', data);
+    setUser(response.data);
+  };
 
-    const register = async (data: any) => {
-        const userData = await apiRegister(data);
-        setUser(userData);
-        localStorage.setItem('user_profile', JSON.stringify(userData));
-        setIsAuthenticated(true);
-    };
+  const logout = async () => {
+    await axios.post('/auth/logout');
+    setUser(null);
+  };
 
-    const logout = async () => {
-        try {
-            await apiLogout();
-        } catch (e) {
-            console.error("Logout failed", e);
-        }
-        localStorage.removeItem('user_profile');
-        setUser(null);
-        setIsAuthenticated(false);
-    };
-
-    return (
-        <AuthContext.Provider value={{ user, login, register, logout, isAuthenticated, isLoading }}>
-            {children}
-        </AuthContext.Provider>
-    );
+  return (
+    <AuthContext.Provider value={{ user, loading, login, register, logout, checkAuth }}>
+      {children}
+    </AuthContext.Provider>
+  );
 };
 
 export const useAuth = () => {
-    const context = useContext(AuthContext);
-    if (context === undefined) {
-        throw new Error('useAuth must be used within an AuthProvider');
-    }
-    return context;
+  const context = useContext(AuthContext);
+  if (context === undefined) {
+    throw new Error('useAuth must be used within an AuthProvider');
+  }
+  return context;
 };
