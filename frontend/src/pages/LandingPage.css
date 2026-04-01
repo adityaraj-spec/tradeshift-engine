@@ -930,8 +930,10 @@
     display: flex;
     flex-direction: column;
     /* Stack lines */
-    align-items: flex-start; /* Left-align lines */
-    width: fit-content;      /* Center the block while lines are left-aligned */
+    align-items: flex-start;
+    /* Left-align lines */
+    width: fit-content;
+    /* Center the block while lines are left-aligned */
     margin-left: auto;
     margin-right: auto;
     gap: 0.2rem;
@@ -953,7 +955,8 @@
 .landing-page-root .multicolor-cursor {
     display: inline-block;
     width: 4px;
-    height: 1.1em; /* Better match for heading font */
+    height: 1.1em;
+    /* Better match for heading font */
     margin-left: 8px;
     background: linear-gradient(180deg, #0055ff, #00ccff, #9d00ff);
     background-size: 100% 300%;
