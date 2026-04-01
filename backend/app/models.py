@@ -1,4 +1,5 @@
-from sqlalchemy import Column, Integer, String, Float, DateTime, Boolean
+from sqlalchemy import Column, Integer, String, Float, DateTime, Boolean, ForeignKey, Text, JSON
+from sqlalchemy.orm import relationship
 from datetime import datetime
 from app.database import Base  # Import Base from database.py
 
@@ -77,7 +78,11 @@ class User(Base):
     occupation = Column(String, nullable=True) # Student, Job, Retired
     city = Column(String, nullable=True)
     security_pin = Column(String(4), nullable=True)
+    last_active_at = Column(DateTime, default=datetime.utcnow, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
+
+    notifications = relationship("Notification", back_populates="user", cascade="all, delete-orphan")
+
 
 class UserSettings(Base):
     """
@@ -220,3 +225,174 @@ class HelpRequest(Base):
     message = Column(String)
     status = Column(String, default="OPEN") # OPEN, CLOSED
     created_at = Column(DateTime, default=datetime.utcnow)
+
+# ═══════════════════════════════════════════
+# ═══════════════════════════════════════════
+# LEARNING / ACADEMY MODELS
+# ═══════════════════════════════════════════
+
+class ReplayScene(Base):
+    """
+    Saved market replay scenarios that users can practice on in the simulator.
+    """
+    __tablename__ = "replay_scenes"
+
+    id = Column(Integer, primary_key=True, index=True)
+    title = Column(String(255), nullable=False)
+    description = Column(Text)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+class LearningProgress(Base):
+    """
+    Tracks per-lesson completion for each user.
+    """
+    __tablename__ = "learning_progress"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, index=True)
+    lesson_id = Column(String, index=True)
+    track_id = Column(String, index=True)
+    xp_earned = Column(Integer, default=15)
+    completed_at = Column(DateTime, default=datetime.utcnow)
+
+
+class UserStreak(Base):
+    """
+    Daily learning streak tracking per user.
+    """
+    __tablename__ = "user_streaks"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, unique=True, index=True)
+    current_streak = Column(Integer, default=0)
+    longest_streak = Column(Integer, default=0)
+    last_active_date = Column(DateTime, nullable=True)
+    learning_minutes = Column(Integer, default=0)
+
+
+class UserBadge(Base):
+    """
+    Earned badges for gamification.
+    """
+    __tablename__ = "user_badges"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, index=True)
+    badge_id = Column(String, index=True)
+    badge_title = Column(String)
+    earned_at = Column(DateTime, default=datetime.utcnow)
+
+class Track(Base):
+    """
+    Learning Track model mapped to admin CMS.
+    """
+    __tablename__ = "tracks"
+
+    id = Column(Integer, primary_key=True, index=True)
+    title = Column(String(255), nullable=False)
+    description = Column(Text)
+    sort_order = Column(Integer, default=0)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    modules = relationship("Module", back_populates="track", cascade="all, delete-orphan")
+
+
+class Module(Base):
+    """
+    Learning Module model mapped to admin CMS.
+    """
+    __tablename__ = "modules"
+
+    id = Column(Integer, primary_key=True, index=True)
+    track_id = Column(Integer, ForeignKey("tracks.id", ondelete="CASCADE"))
+    title = Column(String(255), nullable=False)
+    description = Column(Text)
+    sort_order = Column(Integer, default=0)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    module_number = Column(String(50))
+
+    track = relationship("Track", back_populates="modules")
+    sub_modules = relationship("SubModule", back_populates="module", cascade="all, delete-orphan")
+    lessons = relationship("Lesson", back_populates="module", cascade="all, delete-orphan")
+
+
+class SubModule(Base):
+    """
+    Learning Sub-Module model mapped to admin CMS.
+    """
+    __tablename__ = "sub_modules"
+
+    id = Column(Integer, primary_key=True, index=True)
+    module_id = Column(Integer, ForeignKey("modules.id", ondelete="CASCADE"))
+    title = Column(String(255), nullable=False)
+    sub_module_number = Column(String(50))
+    sort_order = Column(Integer, default=0)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    module = relationship("Module", back_populates="sub_modules")
+    lessons = relationship("Lesson", back_populates="sub_module")
+
+
+class Lesson(Base):
+    """
+    Learning Lesson model mapped to admin CMS.
+    """
+    __tablename__ = "lessons"
+
+    id = Column(Integer, primary_key=True, index=True)
+    module_id = Column(Integer, ForeignKey("modules.id", ondelete="CASCADE"))
+    title = Column(String(255), nullable=False)
+    opening_hook = Column(Text)
+    core_explanation = Column(Text)
+    socratic_questions = Column(JSON, default=list)
+    real_life_application = Column(Text)
+    key_takeaways = Column(JSON, default=list)
+    quiz_questions = Column(JSON, default=list)
+    practice_scene_id = Column(String(255))
+    xp_reward = Column(Integer, default=0)
+    is_published = Column(Boolean, default=False)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    content = Column(JSON)  # TipTap/ProseMirror JSON doc from CMS editor
+    sort_order = Column(Integer, default=0)
+    
+    sub_module_id = Column(Integer, ForeignKey("sub_modules.id", ondelete="SET NULL"))
+    lesson_number = Column(String(50))
+
+    sub_module = relationship("SubModule", back_populates="lessons")
+    module = relationship("Module", back_populates="lessons")
+
+# ──────────────────────────────────────────────
+# 7. ANALYTICS & MONITORING
+# ──────────────────────────────────────────────
+
+class PageEngagement(Base):
+    """
+    Tracks how much time each user spends on specific pages (heartbeat based).
+    """
+    __tablename__ = "page_engagement"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, index=True)
+    page_path = Column(String, index=True) # e.g., '/markets', '/learn'
+    duration_seconds = Column(Integer, default=0) # Accumulated time in seconds
+    timestamp = Column(DateTime, default=datetime.utcnow)
+    session_id = Column(String, nullable=True) # For grouping visits together
+
+class Notification(Base):
+    """
+    Model for global and user-specific notifications.
+    """
+    __tablename__ = "notifications"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=True, index=True) # NULL means broadcast to all
+    
+    title = Column(String(255), nullable=False)
+    content = Column(Text, nullable=False)
+    type = Column(String(50), default="info") # info, warning, success, error
+    
+    is_read = Column(Boolean, default=False)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    user = relationship("User", back_populates="notifications")

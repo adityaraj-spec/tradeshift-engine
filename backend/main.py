@@ -19,8 +19,11 @@ from redis import Redis
 from prometheus_fastapi_instrumentator import Instrumentator
 from app.oms import OrderManager
 from app import auth
-from app.routers import inngest, portfolio, history, trading, news, community
+from app.routers import inngest, portfolio, history, trading, news, community, analytics, notifications
 from app.websocket_manager import order_manager
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.util import get_remote_address
+from slowapi.errors import RateLimitExceeded
 from app.models import User
 from app.database import get_db
 from app.news_service import fetch_news_for_date
@@ -60,7 +63,10 @@ except ImportError:
         def generate_ticks(self, o, h, l, c, num_ticks=60):
             return [o] * num_ticks
 
+limiter = Limiter(key_func=get_remote_address)
 app = FastAPI()
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 # Instrumentator (Monitoring)
 Instrumentator().instrument(app).expose(app)
@@ -150,12 +156,15 @@ app.include_router(auth.router)
 app.include_router(inngest.router)
 app.include_router(portfolio.router)
 app.include_router(history.router)
-from app.routers import inngest, portfolio, history, trading, user
+from app.routers import inngest, portfolio, history, trading, user, learn
 # ...
 app.include_router(trading.router)
 app.include_router(user.router)
 app.include_router(news.router)
 app.include_router(community.router)
+app.include_router(learn.router)
+app.include_router(analytics.router)
+app.include_router(notifications.router)
 
 # --- 3. INFRASTRUCTURE CONNECTIONS ---
 
@@ -720,7 +729,7 @@ async def live_indices_websocket(websocket: WebSocket):
         except Exception:
             pass
 
-    # Callback to push updates to this specific client
+    # Callback to push updates to this specific client (from Shoonya Live WS)
     async def push_update(data):
         try:
             # Send the entire dictionary so the frontend gets all indices at once
@@ -730,6 +739,26 @@ async def live_indices_websocket(websocket: WebSocket):
             raise e # Trigger disconnect handling
 
     shoonya_live.add_callback(push_update)
+    
+    # Fallback Mechanism: If Shoonya is not connected, periodically send data from market_service (yfinance)
+    async def fallback_loop():
+        while True:
+            try:
+                if not shoonya_live.connected:
+                    # logger.info("Shoonya disconnected, sending fallback indices from yfinance")
+                    indices = market_service.get_indices()
+                    # Convert list to dict format expected by frontend
+                    payload = {idx["name"]: idx for idx in indices}
+                    if payload:
+                        # Update shoonya_live.latest_data so new connections get it immediately
+                        shoonya_live.latest_data.update(payload)
+                        await websocket.send_json(payload)
+                await asyncio.sleep(15) # Refresh every 15 seconds in fallback mode
+            except Exception as e:
+                print(f"⚠️ Live Indices Fallback Error: {e}")
+                break
+
+    fallback_task = asyncio.create_task(fallback_loop())
     
     try:
         while True:
@@ -741,6 +770,8 @@ async def live_indices_websocket(websocket: WebSocket):
         print(f"🔴 Live Indices Error: {e}")
     finally:
         shoonya_live.remove_callback(push_update)
+        fallback_task.cancel()
+
 
 
 @app.websocket("/ws/ticker")

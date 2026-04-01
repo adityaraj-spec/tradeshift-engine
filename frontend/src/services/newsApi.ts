@@ -30,11 +30,18 @@ export const fetchNews = async (category: string = 'all', limit: number = 50): P
   }
 };
 
-export const explainNews = async (newsId: string, userLevel: string = 'Beginner'): Promise<string> => {
+export const explainNews = async (
+  newsId: string, 
+  userLevel: string = 'Beginner',
+  title?: string,
+  description?: string
+): Promise<string> => {
   try {
     const response = await axios.post(`${API_BASE}/explain`, {
       news_id: newsId,
-      user_level: userLevel
+      user_level: userLevel,
+      title,
+      description
     });
     return response.data.explanation;
   } catch (error) {

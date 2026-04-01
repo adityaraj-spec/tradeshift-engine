@@ -2,20 +2,26 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useState } from 'react';
 import { Sun, Moon, Search, Bell, LogOut, ChevronDown, UserCircle, Menu, X } from 'lucide-react';
 import { useThemeStore } from '../../store/themeStore';
+import { useTheme } from '../../context/ThemeContext';
 import { NavItems } from './NavItems';
 import { SymbolSearch } from '../features/SymbolSearch';
 import { useGame } from '../../context/GameContext';
 import { useMultiChartStore } from '../../store/useMultiChartStore';
 import { useAuth } from '../../context/AuthContext';
+import { useNotifications } from '../../context/NotificationContext';
+import NotificationPanel from '../features/NotificationPanel';
 
 const Topbar = () => {
-  const { theme, toggleTheme } = useThemeStore();
+  const { theme, setTheme } = useTheme();
+  const toggleTheme = () => setTheme(theme === 'dark' ? 'light' : 'dark');
   const { setSymbol } = useGame();
   const { activeChartId } = useMultiChartStore();
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const { user, logout } = useAuth();
+  const { unreadCount } = useNotifications();
+  const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -89,9 +95,26 @@ const Topbar = () => {
 
         <div className="h-6 w-[1px] bg-tv-border"></div>
 
-        <button className="text-tv-text-secondary hover:text-tv-text-primary transition-colors duration-300" title="Notifications">
-          <Bell size={20} />
-        </button>
+        <div className="relative">
+          <button 
+            onClick={() => setIsNotificationsOpen(!isNotificationsOpen)}
+            className={`p-2 rounded-full transition-colors duration-300 relative ${isNotificationsOpen ? 'text-tv-primary bg-tv-primary/10' : 'text-tv-text-secondary hover:text-tv-text-primary hover:bg-tv-text-primary/10'}`} 
+            title="Notifications"
+          >
+            <Bell size={20} />
+            {unreadCount > 0 && (
+              <span className="absolute top-1.5 right-1.5 w-4 h-4 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center border-2 border-white dark:border-[#121212] animate-in zoom-in duration-300">
+                {unreadCount > 9 ? '9+' : unreadCount}
+              </span>
+            )}
+          </button>
+          {isNotificationsOpen && (
+            <>
+              <div className="fixed inset-0 z-40" onClick={() => setIsNotificationsOpen(false)}></div>
+              <NotificationPanel onClose={() => setIsNotificationsOpen(false)} />
+            </>
+          )}
+        </div>
 
         <div className="h-6 w-[1px] bg-tv-border"></div>
 
@@ -186,9 +209,14 @@ const Topbar = () => {
           
           <div className="flex justify-between items-center px-1 mb-2">
             <span className="text-sm font-medium text-slate-600 dark:text-gray-300">Notifications</span>
-            <button className="p-2 rounded-full text-tv-text-secondary hover:text-tv-text-primary bg-slate-100 dark:bg-white/5 transition-colors">
+            <Link to="/notifications" onClick={() => setIsMobileMenuOpen(false)} className="p-2 rounded-full text-tv-text-secondary hover:text-tv-text-primary bg-slate-100 dark:bg-white/5 transition-colors relative">
               <Bell size={20} />
-            </button>
+              {unreadCount > 0 && (
+                <span className="absolute top-0 right-0 w-4 h-4 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center border-2 border-white dark:border-[#121212]">
+                  {unreadCount > 9 ? '9+' : unreadCount}
+                </span>
+              )}
+            </Link>
           </div>
 
           {user ? (

@@ -33,13 +33,20 @@ const NewsPage: React.FC = () => {
 
   useEffect(() => {
     fetchNews(activeCategory);
+    
+    // Auto-refresh every 2 minutes
+    const interval = setInterval(() => {
+      fetchNews(activeCategory);
+    }, 120000); 
+
+    return () => clearInterval(interval);
   }, [activeCategory, fetchNews]);
 
-  const handleExplain = async (id: string, title: string) => {
+  const handleExplain = async (id: string, title: string, description?: string) => {
     setExplainingId(id);
     setSelectedNewsTitle(title);
     try {
-      const result = await explainNews(id, 'Beginner');
+      const result = await explainNews(id, 'Beginner', title, description);
       setExplanation(result);
     } catch (error) {
       console.error('AI Explanation failed:', error);
@@ -64,8 +71,15 @@ const NewsPage: React.FC = () => {
                     Global News <span className="text-tv-primary">& AI Insights</span>
                 </h1>
                 <p className="text-slate-500 dark:text-slate-400 max-w-2xl">
-                    Stay ahead of the markets with real-time news curated from global sources and simplified by AI.
+                    Stay ahead of the markets with real-time news curated from global and Indian sources, simplified by AI.
                 </p>
+                <div className="mt-4 flex items-center gap-3">
+                    <div className="flex items-center gap-1.5 px-2 py-1 rounded bg-green-500/10 border border-green-500/20">
+                        <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+                        <span className="text-[10px] font-black text-green-500 uppercase tracking-widest">Live Updates</span>
+                    </div>
+                    <span className="text-[10px] text-slate-400 font-medium italic">Refreshing every 2 minutes</span>
+                </div>
             </div>
             {/* Background Glow */}
             <div className="absolute top-0 right-0 w-64 h-64 bg-tv-primary/5 blur-[80px] -mr-32 -mt-32 pointer-events-none" />
