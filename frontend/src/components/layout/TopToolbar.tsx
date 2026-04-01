@@ -1,7 +1,7 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { 
     Bell, Rewind, Settings, Maximize, Camera, Newspaper, SearchCode,
-    PlusCircle, BarChart2, LayoutTemplate, Layers
+    PlusCircle, BarChart2, LayoutTemplate, Layers, ChevronDown
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -9,10 +9,20 @@ import { Separator } from '@/components/ui/separator';
 import { SymbolSearch } from '../features/SymbolSearch';
 import { useGame } from '../../hooks/useGame';
 import { useMultiChartStore } from '../../store/useMultiChartStore';
+import type { TimeframeId } from '../../store/useMultiChartStore';
 import { toast } from 'sonner';
 import { IndicatorTemplateMenu } from '../ProChart/IndicatorTemplateMenu';
 import { LayoutSwitcher } from '../ProChart/MultiChartGrid';
 import type { IndicatorTemplate } from '../../store/useChartObjects';
+
+const TIMEFRAMES: { id: TimeframeId; label: string; shortLabel: string }[] = [
+    { id: '1min',  label: '1 Minute',   shortLabel: '1m' },
+    { id: '3min',  label: '3 Minutes',  shortLabel: '3m' },
+    { id: '5min',  label: '5 Minutes',  shortLabel: '5m' },
+    { id: '15min', label: '15 Minutes', shortLabel: '15m' },
+    { id: '30min', label: '30 Minutes', shortLabel: '30m' },
+    { id: '1hr',   label: '1 Hour',     shortLabel: '1H' },
+];
 
 interface TopToolbarProps {
     isNewsOpen?: boolean;
@@ -30,9 +40,26 @@ const TopToolbar = ({
     onToggleIndicators, onOpenAlerts, activeIndicatorIds, onApplyIndicatorTemplate 
 }: TopToolbarProps) => {
     const { selectedSymbol, isReplayActive, toggleReplay } = useGame();
-    const { activeChartId, updateChart } = useMultiChartStore();
+    const { activeChartId, updateChart, activeTimeframe, setActiveTimeframe } = useMultiChartStore();
     const [isSearchOpen, setIsSearchOpen] = useState(false);
+    const [isTimeframeOpen, setIsTimeframeOpen] = useState(false);
+    const timeframeRef = useRef<HTMLDivElement>(null);
     const navigate = useNavigate();
+
+    // Close timeframe dropdown on outside click
+    useEffect(() => {
+        const handleClickOutside = (e: MouseEvent) => {
+            if (timeframeRef.current && !timeframeRef.current.contains(e.target as Node)) {
+                setIsTimeframeOpen(false);
+            }
+        };
+        if (isTimeframeOpen) {
+            document.addEventListener('mousedown', handleClickOutside);
+        }
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, [isTimeframeOpen]);
+
+    const currentTf = TIMEFRAMES.find(t => t.id === activeTimeframe);
 
     return (
         <div className="h-12 bg-transparent flex items-center px-4 justify-between text-tv-text-secondary select-none">
@@ -42,6 +69,7 @@ const TopToolbar = ({
                 onSelect={(symbol) => updateChart(activeChartId, { symbol })}
                 activeChartId={activeChartId}
             />
+
 
             {/* LEFT CONTROLS */}
             <div className="flex items-center space-x-2 h-full">
@@ -54,7 +82,7 @@ const TopToolbar = ({
                     {selectedSymbol || 'USDJPY'}
                 </Button>
 
-                <Separator orientation="vertical" className="h-6 bg-tv-border" />
+                <Separator orientation="vertical" className="h-6 bg-tv-border dark:bg-white/10" />
 
                 {/* Compare */}
                 <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-tv-bg-pane/50 hover:text-blue-500" title="Compare" onClick={() => toast.info('Compare tool opening...')}>
@@ -63,10 +91,45 @@ const TopToolbar = ({
 
                 <Separator orientation="vertical" className="h-6 bg-tv-border" />
 
-                {/* Timeframe */}
-                <Button variant="ghost" className="h-8 px-2 text-tv-text-primary hover:bg-tv-bg-pane/50 hover:text-blue-500 font-bold" onClick={() => toast.info('Timeframe selector opening...')}>
-                    45m
-                </Button>
+                {/* Timeframe Dropdown */}
+                <div className="relative" ref={timeframeRef}>
+                    <Button
+                        variant="ghost"
+                        className={`h-8 px-2 gap-1 font-bold transition-all duration-150 ${
+                            isTimeframeOpen
+                                ? 'bg-blue-500/15 text-blue-400 border border-blue-500/30'
+                                : 'text-tv-text-primary hover:bg-tv-bg-pane/50 hover:text-blue-500'
+                        }`}
+                        onClick={() => setIsTimeframeOpen(!isTimeframeOpen)}
+                    >
+                        {currentTf?.shortLabel || activeTimeframe}
+                        <ChevronDown size={12} className={`transition-transform duration-200 ${isTimeframeOpen ? 'rotate-180' : ''}`} />
+                    </Button>
+
+                    {isTimeframeOpen && (
+                        <div className="absolute top-full left-0 mt-1 z-[200] bg-[#1a1a2e] border border-white/10 rounded-lg shadow-2xl shadow-black/60 overflow-hidden min-w-[160px] animate-in fade-in slide-in-from-top-1 duration-150">
+                            <div className="py-1">
+                                {TIMEFRAMES.map((tf) => (
+                                    <button
+                                        key={tf.id}
+                                        onClick={() => {
+                                            setActiveTimeframe(tf.id);
+                                            setIsTimeframeOpen(false);
+                                        }}
+                                        className={`w-full flex items-center justify-between px-3 py-2 text-xs font-semibold transition-all duration-100 ${
+                                            activeTimeframe === tf.id
+                                                ? 'bg-blue-500/15 text-blue-400'
+                                                : 'text-white/70 hover:bg-white/5 hover:text-white'
+                                        }`}
+                                    >
+                                        <span className="font-bold tracking-wide">{tf.shortLabel}</span>
+                                        <span className="text-[10px] opacity-50 font-medium">{tf.label}</span>
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+                </div>
 
                 {/* Chart Type */}
                 <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-tv-bg-pane/50 hover:text-blue-500" onClick={() => toast.info('Chart Type Options...')}>
@@ -117,8 +180,8 @@ const TopToolbar = ({
 
                     <div className={`px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-widest border ${
                         isReplayActive 
-                        ? 'bg-blue-500/10 border-blue-500/30 text-blue-500' 
-                        : 'bg-green-500/10 border-green-500/30 text-green-500'
+                        ? 'bg-blue-500/10 border-blue-500/30 text-blue-600 dark:text-blue-400' 
+                        : 'bg-green-500/10 border-green-500/30 text-green-600 dark:text-green-400'
                     }`}>
                         {isReplayActive ? 'Simulation' : 'Live Mode'}
                     </div>

@@ -145,7 +145,7 @@ const ScrambleText: React.FC<ScrambleTextProps> = ({ text, duration = 3000, dela
   return (
     <span>
       {displayText}
-      {!isFinished && <span className="typewriter-cursor">|</span>}
+      <span className="typewriter-cursor">|</span>
     </span>
   );
 };
@@ -1492,8 +1492,7 @@ export default function LandingPage() {
               </div>
               {/* Row 2 Typography sync */}
               <div>
-                <span className={`typewriter-text line-2 ${line1Done ? 'start-typing' : ''}`}>Zero Risk</span>
-                {line1Done && !line2Done && <span className="multicolor-cursor visible" />}
+                <span className={`typewriter-text line-2 ${line1Done ? 'start-typing' : ''}`}>Zero Risk{line1Done && <span className="multicolor-cursor visible" />}</span>
               </div>
             </div>
           </Reveal>

@@ -18,6 +18,8 @@ class NewsItem(BaseModel):
 class ExplainRequest(BaseModel):
     news_id: str
     user_level: str = "Beginner"
+    title: Optional[str] = None
+    description: Optional[str] = None
 
 class ExplainResponse(BaseModel):
     news_id: str
@@ -39,7 +41,12 @@ async def fetch_news_endpoint(
 async def explain_news_endpoint(request: ExplainRequest):
     """Get an AI-powered explanation for a specific news article."""
     try:
-        explanation = await explain_news(request.news_id, request.user_level)
+        explanation = await explain_news(
+            request.news_id, 
+            request.user_level,
+            request.title,
+            request.description
+        )
         return {"news_id": request.news_id, "explanation": explanation}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to generate explanation: {str(e)}")

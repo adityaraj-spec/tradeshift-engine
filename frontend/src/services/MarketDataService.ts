@@ -123,9 +123,10 @@ export class MarketDataService {
 export async function fetchHistoricalCandles(
     symbol: string,
     limit = 500,
-    date?: string
+    date?: string,
+    interval: string = '1min'
 ): Promise<CandleData[]> {
-    let url = `${API_BASE}/api/historical/${encodeURIComponent(symbol)}?limit=${limit}`;
+    let url = `${API_BASE}/api/historical/${encodeURIComponent(symbol)}?limit=${limit}&interval=${encodeURIComponent(interval)}`;
     if (date) {
         url += `&date=${date}`;
     }

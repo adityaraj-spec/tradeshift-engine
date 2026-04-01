@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { Mail, Lock, LogIn, AlertCircle, ArrowRight } from 'lucide-react';
 
@@ -10,6 +10,7 @@ const Login: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const { login } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -18,7 +19,8 @@ const Login: React.FC = () => {
 
     try {
       await login({ email, password });
-      navigate('/trade');
+      const from = location.state?.from || '/trade';
+      navigate(from, { replace: true });
     } catch (err: any) {
       setError(err.response?.data?.detail || 'Failed to login. Please check your credentials.');
     } finally {
@@ -35,7 +37,7 @@ const Login: React.FC = () => {
       </div>
 
       <div className="w-full max-w-md relative z-10">
-        <div className="bg-white/80 dark:bg-[#1E222D]/80 backdrop-blur-xl border border-slate-200 dark:border-white/10 rounded-2xl shadow-2xl p-8 transition-all duration-300">
+        <div className="bg-white/80 dark:bg-[#1E222D]/80 backdrop-blur-xl border border-slate-200 dark:border-white/10 rounded-md shadow-2xl p-8 transition-all duration-300">
           <div className="text-center mb-8">
             <h1 className="text-3xl font-bold text-slate-900 dark:text-white mb-2 tracking-tight">
               Welcome <span className="text-tv-primary">Back</span>

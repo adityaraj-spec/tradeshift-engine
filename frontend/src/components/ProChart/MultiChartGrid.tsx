@@ -6,6 +6,7 @@ import type { GameData } from './ProChart';
 import type { DrawingToolId } from '../../hooks/useDrawingTools';
 import type { IndicatorTemplate } from '../../store/useChartObjects';
 import { SymbolSearch } from '../features/SymbolSearch';
+import { ChartTabs } from './ChartTabs';
 import ErrorBoundary from '../ErrorBoundary';
 import './MultiChartGrid.css';
 
@@ -90,6 +91,7 @@ interface ChartSlotProps {
   onActivate: () => void;
   onClose: () => void;
   onSymbolChange: (symbol: string) => void;
+  layoutType: number;
   children: React.ReactNode;
 }
 
@@ -101,6 +103,7 @@ const ChartSlot: React.FC<ChartSlotProps> = React.memo(({
   onActivate,
   onClose,
   onSymbolChange,
+  layoutType,
   children,
 }) => {
   const [isSearchOpen, setIsSearchOpen] = useState(false);
@@ -126,20 +129,27 @@ const ChartSlot: React.FC<ChartSlotProps> = React.memo(({
       <div className="chart-slot-header">
         <div className="chart-slot-header-left">
           <span className="chart-slot-index">{index + 1}</span>
-          <button
-            className="chart-slot-search-btn"
-            onClick={(e) => {
-              e.stopPropagation();
-              setIsSearchOpen(true);
-            }}
-            title="Change symbol"
-          >
-            <Search size={10} />
-          </button>
-          <span className="chart-slot-symbol">{chart.symbol}</span>
-          <span className="chart-slot-timeframe">· {chart.timeframe}</span>
-          {isActive && (
-            <span className="chart-slot-active-badge">ACTIVE</span>
+          
+          {layoutType === 1 ? (
+            <ChartTabs />
+          ) : (
+            <>
+              <button
+                className="chart-slot-search-btn"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setIsSearchOpen(true);
+                }}
+                title="Change symbol"
+              >
+                <Search size={10} />
+              </button>
+              <span className="chart-slot-symbol">{chart.symbol}</span>
+              <span className="chart-slot-timeframe">· {chart.timeframe}</span>
+              {isActive && (
+                <span className="chart-slot-active-badge">ACTIVE</span>
+              )}
+            </>
           )}
         </div>
         <div className="chart-slot-header-right">
@@ -201,8 +211,16 @@ export const MultiChartGrid: React.FC<MultiChartGridProps> = ({
   const { charts, layoutType, activeChartId, setActiveChart, removeChart, updateChart } =
     useMultiChartStore();
 
-  // Only show charts up to the layout count
-  const visibleCharts = charts.slice(0, layoutType);
+  // If layoutType is 1, we show the active chart (Tab Mode)
+  // Otherwise, we show the first N charts in the grid
+  const visibleCharts = layoutType === 1 
+    ? charts.filter(c => c.id === activeChartId)
+    : charts.slice(0, layoutType);
+  
+  // Fallback if active chart is missing from the list
+  if (visibleCharts.length === 0 && charts.length > 0) {
+    visibleCharts.push(charts[0]);
+  }
 
   const handleSymbolChange = useCallback((chartId: string, symbol: string) => {
     updateChart(chartId, { symbol });
@@ -225,13 +243,14 @@ export const MultiChartGrid: React.FC<MultiChartGridProps> = ({
             onActivate={() => setActiveChart(chart.id)}
             onClose={() => removeChart(chart.id)}
             onSymbolChange={(symbol) => handleSymbolChange(chart.id, symbol)}
+            layoutType={layoutType}
           >
             <ErrorBoundary name={`Chart ${i + 1} (${chart.symbol})`}>
               <ProChartComponent
                 chartId={chart.id}
                 isPrimary={isPrimary}
                 gameData={chartProps.gameData}
-                data={isPrimary ? chartProps.data : (chart.candleData || [])}
+                data={(chart.candleData && chart.candleData.length > 0) ? chart.candleData : (isPrimary ? chartProps.data : [])}
                 activeDrawingTool={isPrimary ? chartProps.activeDrawingTool : undefined}
                 onDrawingToolChange={isPrimary ? chartProps.onDrawingToolChange : undefined}
                 isLibraryOpen={isPrimary ? chartProps.isLibraryOpen : false}

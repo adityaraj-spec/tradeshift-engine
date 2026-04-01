@@ -468,7 +468,7 @@ const ChartArea = ({ onPriceClick, onEntryLineClick, previewPrice, positions: pr
   }, [trades, currentPrice, selectedSymbol]);
 
   return (
-    <div className="relative flex-1 w-full h-full bg-tv-bg-base overflow-hidden font-sans">
+    <div className="relative flex-1 w-full h-full bg-white dark:bg-tv-bg-base overflow-hidden font-sans">
 
       {/* Chart Canvas */}
       <div ref={chartContainerRef} className="absolute inset-0 bottom-0" />
@@ -544,7 +544,7 @@ const ChartArea = ({ onPriceClick, onEntryLineClick, previewPrice, positions: pr
 
       {/* BOTTOM CENTER OVERLAY - Replay Toolbar */}
       {isReplayActive && (
-        <div className="absolute bottom-10 left-1/2 -translate-x-1/2 z-20 flex items-center bg-tv-bg-pane border border-tv-border rounded shadow-lg p-1.5 gap-2 select-none">
+        <div className="absolute bottom-28 left-1/2 -translate-x-1/2 z-20 flex items-center bg-tv-bg-pane border border-tv-border rounded shadow-lg p-1.5 gap-2 select-none">
 
           <div className="relative">
             <Button

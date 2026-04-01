@@ -1,4 +1,5 @@
 # File: backend/main.py
+# Trigger reload: 2026-03-27 15:22
 
 from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect, Depends
 from fastapi.middleware.cors import CORSMiddleware
@@ -18,8 +19,11 @@ from redis import Redis
 from prometheus_fastapi_instrumentator import Instrumentator
 from app.oms import OrderManager
 from app import auth
-from app.routers import inngest, portfolio, history, trading, news
+from app.routers import inngest, portfolio, history, trading, news, community, analytics, notifications
 from app.websocket_manager import order_manager
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.util import get_remote_address
+from slowapi.errors import RateLimitExceeded
 from app.models import User
 from app.database import get_db
 from app.news_service import fetch_news_for_date
@@ -59,7 +63,10 @@ except ImportError:
         def generate_ticks(self, o, h, l, c, num_ticks=60):
             return [o] * num_ticks
 
+limiter = Limiter(key_func=get_remote_address)
 app = FastAPI()
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 # Instrumentator (Monitoring)
 Instrumentator().instrument(app).expose(app)
@@ -97,6 +104,29 @@ scheduler.start()
 async def startup_event():
     # Attempt to connect to Shoonya Live WS in the background
     asyncio.create_task(shoonya_live.connect())
+    
+    # Seed community channels
+    await seed_community_channels()
+
+async def seed_community_channels():
+    """Create default community channels if they don't exist."""
+    from app.database import get_session
+    from app.models import CommunityChannel
+    from sqlalchemy import select
+    
+    async with await get_session() as db:
+        result = await db.execute(select(CommunityChannel))
+        if not result.scalars().first():
+            logger.info("🌱 Seeding default community channels...")
+            channels = [
+                {"name": "general", "description": "General discussion for everyone."},
+                {"name": "trading-signals", "description": "Share and discuss trading signals."},
+                {"name": "announcements", "description": "Important updates and announcements."}
+            ]
+            for ch_data in channels:
+                db.add(CommunityChannel(**ch_data))
+            await db.commit()
+            logger.info("✅ Default channels seeded.")
 
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
@@ -126,11 +156,15 @@ app.include_router(auth.router)
 app.include_router(inngest.router)
 app.include_router(portfolio.router)
 app.include_router(history.router)
-from app.routers import inngest, portfolio, history, trading, user
+from app.routers import inngest, portfolio, history, trading, user, learn
 # ...
 app.include_router(trading.router)
 app.include_router(user.router)
 app.include_router(news.router)
+app.include_router(community.router)
+app.include_router(learn.router)
+app.include_router(analytics.router)
+app.include_router(notifications.router)
 
 # --- 3. INFRASTRUCTURE CONNECTIONS ---
 
@@ -397,18 +431,35 @@ async def get_available_dates(symbol: str):
 
 
 @app.get("/api/historical/{symbol}")
-async def get_historical_candles(symbol: str, limit: int = 500, date: str = None):
+async def get_historical_candles(symbol: str, limit: int = 500, date: str = None, interval: str = "1min"):
     """
     Return historical OHLC candles for a given symbol from its Parquet file.
      Optionally filtered by a specific YYYY-MM-DD date.
+     Supports resampling via interval parameter.
 
     Args:
         symbol: Symbol name (e.g. 'NIFTY', 'BANKNIFTY')
         limit:  Max candles to return (default 500, most recent)
+        date:   Optional date filter (YYYY-MM-DD)
+        interval: Candle interval - '1min', '3min', '5min', '15min', '30min', '1hr' (default '1min')
 
     Returns:
-        JSON list of {time, open, high, low, close} objects
+        JSON list of {time, open, high, low, close, volume} objects
     """
+    # Map interval strings to pandas resample rules
+    INTERVAL_MAP = {
+        '1min': '1min',
+        '3min': '3min',
+        '5min': '5min',
+        '15min': '15min',
+        '30min': '30min',
+        '1hr': '1h',
+    }
+    
+    resample_rule = INTERVAL_MAP.get(interval)
+    if resample_rule is None:
+        raise HTTPException(status_code=400, detail=f"Invalid interval '{interval}'. Allowed: {list(INTERVAL_MAP.keys())}")
+
     try:
         base_symbol = symbol.split('-')[0] if '-' in symbol else symbol
         df, _, _ = load_parquet_for_symbol(base_symbol, date, allow_fallback=True)
@@ -440,6 +491,23 @@ async def get_historical_candles(symbol: str, limit: int = 500, date: str = None
             else:
                 print(f"⚠️ No data found for {symbol} on {date}. Using most recent data instead.")
 
+        # Resample to requested interval if not already 1min
+        if interval != '1min':
+            df = df.set_index(time_col)
+            # Ensure volume column exists
+            if 'volume' not in df.columns:
+                df['volume'] = 0
+            df = df.resample(resample_rule).agg({
+                'open': 'first',
+                'high': 'max',
+                'low': 'min',
+                'close': 'last',
+                'volume': 'sum'
+            }).dropna(subset=['open'])
+            df = df.reset_index()
+            # The index column after reset is the datetime
+            time_col = df.columns[0]
+
         # Take the most recent `limit` candles
         df = df.tail(limit)
 
@@ -455,7 +523,7 @@ async def get_historical_candles(symbol: str, limit: int = 500, date: str = None
                 "volume": float(row.get("volume", 0)) if "volume" in row.index else 0,
             })
 
-        return {"symbol": symbol, "candles": candles}
+        return {"symbol": symbol, "candles": candles, "interval": interval}
 
     except FileNotFoundError as e:
         raise HTTPException(status_code=404, detail=str(e))
@@ -661,7 +729,7 @@ async def live_indices_websocket(websocket: WebSocket):
         except Exception:
             pass
 
-    # Callback to push updates to this specific client
+    # Callback to push updates to this specific client (from Shoonya Live WS)
     async def push_update(data):
         try:
             # Send the entire dictionary so the frontend gets all indices at once
@@ -671,6 +739,26 @@ async def live_indices_websocket(websocket: WebSocket):
             raise e # Trigger disconnect handling
 
     shoonya_live.add_callback(push_update)
+    
+    # Fallback Mechanism: If Shoonya is not connected, periodically send data from market_service (yfinance)
+    async def fallback_loop():
+        while True:
+            try:
+                if not shoonya_live.connected:
+                    # logger.info("Shoonya disconnected, sending fallback indices from yfinance")
+                    indices = market_service.get_indices()
+                    # Convert list to dict format expected by frontend
+                    payload = {idx["name"]: idx for idx in indices}
+                    if payload:
+                        # Update shoonya_live.latest_data so new connections get it immediately
+                        shoonya_live.latest_data.update(payload)
+                        await websocket.send_json(payload)
+                await asyncio.sleep(15) # Refresh every 15 seconds in fallback mode
+            except Exception as e:
+                print(f"⚠️ Live Indices Fallback Error: {e}")
+                break
+
+    fallback_task = asyncio.create_task(fallback_loop())
     
     try:
         while True:
@@ -682,6 +770,8 @@ async def live_indices_websocket(websocket: WebSocket):
         print(f"🔴 Live Indices Error: {e}")
     finally:
         shoonya_live.remove_callback(push_update)
+        fallback_task.cancel()
+
 
 
 @app.websocket("/ws/ticker")
@@ -1146,8 +1236,11 @@ async def websocket_endpoint(websocket: WebSocket):
                         
                         if not n_item.get("triggered") and tick_time >= n_timestamp:
                             active_news[idx]["triggered"] = True
-                            print(f"📰 FLASHING NEWS: {n_item['title']} at simulated time {tick_time}", flush=True)
+                            print(f"📰 FLASHING NEWS: {n_item['title']} at simulated time {tick_time.strftime('%H:%M:%S')}", flush=True)
                             
+                            # Ensure time_str matches the EXACT trigger time for visual sync
+                            display_time = tick_time.strftime("%H:%M:%S")
+
                             asyncio.create_task(websocket.send_json({
                                 "type": "NEWS_FLASH",
                                 "data": {
@@ -1155,9 +1248,10 @@ async def websocket_endpoint(websocket: WebSocket):
                                     "symbol": primary_symbol,
                                     "title": n_item["title"],
                                     "description": n_item["description"],
-                                    "time_str": n_item["time_str"],
+                                    "time_str": display_time,
                                     "source": n_item["source"],
-                                    "url": n_item["url"]
+                                    "url": n_item["url"],
+                                    "is_simulated": n_item.get("is_simulated", False)
                                 }
                             }))
                             

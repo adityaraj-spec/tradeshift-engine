@@ -4,6 +4,7 @@ import type { CandleData, Trade } from '../types';
 import { marketDataService, fetchHistoricalCandles, fetchAvailableDates } from '../services/MarketDataService';
 import { toast } from 'sonner';
 import { useMultiChartStore } from '../store/useMultiChartStore';
+import { useTheme } from './ThemeContext';
 
 export interface NewsItem {
   id: number;
@@ -23,6 +24,7 @@ export interface NewsItem {
     analogy: string;
     golden_rule: string;
   };
+  is_simulated?: boolean;
 }
 
 export interface IndexData {
@@ -46,7 +48,7 @@ interface GameState {
   trades: Trade[];
   newsItems: NewsItem[];
   simulatedIndices: IndexData[];
-  theme: 'dark' | 'light';
+  theme: 'dark' | 'light' | 'system';
   selectedSymbol: string;
   selectedDate: string;
   availableDates: string[];
@@ -112,7 +114,6 @@ export const GameProvider: React.FC<{ children: React.ReactNode; }> = ({ childre
   const [trades, setTrades] = useState<Trade[]>([]);
   const [newsItems, setNewsItems] = useState<NewsItem[]>([]);
   const [simulatedIndices, setSimulatedIndices] = useState<IndexData[]>([]);
-  const [theme, setTheme] = useState<'dark' | 'light'>('dark');
   const [selectedSymbol, setSelectedSymbol] = useState(DEFAULT_SYMBOL);
   const [isLoadingHistory, setIsLoadingHistory] = useState(false);
   const [isReplayActive, setIsReplayActive] = useState(false);
@@ -121,6 +122,8 @@ export const GameProvider: React.FC<{ children: React.ReactNode; }> = ({ childre
 
   // NEW: Track all active symbols from the multi-chart store (joined as string for stable dependency)
   const allChartSymbolsStr = useMultiChartStore(state => state.charts.map(c => c.symbol).join(','));
+  // Wire to the real ThemeContext so DOM .dark class is applied
+  const { theme, setTheme } = useTheme();
 
   const [selectedDate, setSelectedDate] = useState('');
   const [availableDates, setAvailableDates] = useState<string[]>([]);
@@ -279,9 +282,10 @@ export const GameProvider: React.FC<{ children: React.ReactNode; }> = ({ childre
 
       // --- NEWS EVENTS ---
       if (payload.type === 'NEWS_FLASH') {
-        toast.info(payload.data.title, {
+        const titlePrefix = payload.data.is_simulated ? "⚡ Simulation Sync: " : "📰 News Flash: ";
+        toast.info(titlePrefix + payload.data.title, {
           description: payload.data.description,
-          duration: 10000,
+          duration: 12000,
           position: 'top-right',
           action: {
             label: 'Explain ✨',
@@ -469,7 +473,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode; }> = ({ childre
       return !prev;
     });
   };
-  const toggleTheme = () => setTheme(prev => (prev === 'dark' ? 'light' : 'dark'));
+  const toggleTheme = () => setTheme(theme === 'dark' ? 'light' : 'dark');
 
   const setSymbol = (symbol: string, _token: string) => {
     setSelectedSymbol(symbol);

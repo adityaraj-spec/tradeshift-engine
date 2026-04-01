@@ -1,10 +1,11 @@
 import { useState, useMemo, useEffect, useCallback, useRef } from 'react';
-import { CalendarRange, X } from 'lucide-react';
+import { X } from 'lucide-react';
 import TopToolbar from '../components/layout/TopToolbar';
 import ProChart from '../components/ProChart/ProChart';
 import { MultiChartGrid } from '../components/ProChart/MultiChartGrid';
 import type { GameData } from '../components/ProChart/ProChart';
 import { useMultiChartStore } from '../store/useMultiChartStore';
+import type { TimeframeId } from '../store/useMultiChartStore';
 import { fetchHistoricalCandles } from '../services/MarketDataService';
 import TradePanel from '../components/TradePanel/TradePanel';
 import NewsPanel from '../components/features/NewsPanel';
@@ -69,7 +70,7 @@ const Home = () => {
   const [activeDrawingTool, setActiveDrawingTool] = useState<DrawingToolId>(null);
   const [isLibraryOpen, setIsLibraryOpen] = useState(false);
 
-  const { charts, activeChartId, setChartData } = useMultiChartStore();
+  const { charts, activeChartId, setChartData, activeTimeframe, setActiveTimeframe } = useMultiChartStore();
 
   // 1. Sync useGame's selectedSymbol with the active chart
   const prevActiveChartIdRef = useRef(activeChartId);
@@ -97,14 +98,14 @@ const Home = () => {
       const visibleCharts = charts.slice(0, layoutType);
 
       for (const chart of visibleCharts) {
-        const fetchKey = `${chart.id}-${chart.symbol}-${selectedDate}`;
+        const fetchKey = `${chart.id}-${chart.symbol}-${selectedDate}-${activeTimeframe}`;
         
-        // Fetch if symbol/date changed and it's not currently being fetched
+        // Fetch if symbol/date/timeframe changed and it's not currently being fetched
         if (chart.symbol && lastFetchedRef.current[chart.id] !== fetchKey) {
           lastFetchedRef.current[chart.id] = fetchKey;
           try {
-            console.log(`🌐 Fetching independent data for Slot ${chart.id}: ${chart.symbol}`);
-            const candles = await fetchHistoricalCandles(chart.symbol, 500, selectedDate || '');
+            console.log(`🌐 Fetching ${activeTimeframe} data for Slot ${chart.id}: ${chart.symbol}`);
+            const candles = await fetchHistoricalCandles(chart.symbol, 500, selectedDate || '', activeTimeframe);
             setChartData(chart.id, candles);
           } catch (err) {
             console.error(`❌ Failed to fetch data for ${chart.symbol} in slot ${chart.id}:`, err);
@@ -116,7 +117,7 @@ const Home = () => {
     };
 
     fetchVisibleCharts();
-  }, [charts, selectedDate, setChartData]);
+  }, [charts, selectedDate, setChartData, activeTimeframe]);
 
   // 3. Force refresh data for all charts when symbol changes in store
   // (Handled by the effect above since candleData is cleared when symbol changes in store)
@@ -369,7 +370,7 @@ const Home = () => {
       {/* EXIT ALL CONFIRMATION DIALOG */}
       {showExitAllConfirm && (
         <div className="fixed inset-0 z-[110] flex items-center justify-center bg-black/80 backdrop-blur-md animate-in fade-in duration-300 p-4">
-          <div className="bg-[#121212] border border-[#f23645]/30 rounded-2xl w-full max-w-sm overflow-hidden shadow-[0_0_50px_rgba(242,54,69,0.2)] animate-in zoom-in-95 duration-200">
+          <div className="bg-[#121212] border border-[#f23645]/30 rounded-md w-full max-w-sm overflow-hidden shadow-[0_0_50px_rgba(242,54,69,0.2)] animate-in zoom-in-95 duration-200">
             <div className="p-8 flex flex-col items-center text-center gap-6">
               <div className="w-16 h-16 bg-[#f23645]/10 rounded-full flex items-center justify-center">
                 <X className="w-8 h-8 text-[#f23645] animate-pulse" />
@@ -404,7 +405,7 @@ const Home = () => {
       {/* ORDER CONFIRMATION DIALOG */}
       {pendingOrder && (
         <div className="fixed inset-0 z-[120] flex items-center justify-center bg-black/80 backdrop-blur-md animate-in fade-in duration-300 p-4">
-          <div className="bg-[#121212] border border-tv-primary/30 rounded-2xl w-full max-w-sm overflow-hidden shadow-[0_0_50px_rgba(43,209,255,0.1)] animate-in zoom-in-95 duration-200">
+          <div className="bg-[#121212] border border-tv-primary/30 rounded-md w-full max-w-sm overflow-hidden shadow-[0_0_50px_rgba(43,209,255,0.1)] animate-in zoom-in-95 duration-200">
             <div className="p-8 flex flex-col gap-6">
               <div className="flex flex-col gap-2 text-center">
                 <h3 className="font-black text-xl uppercase tracking-widest text-white">Confirm Order</h3>
@@ -478,14 +479,21 @@ const Home = () => {
 
       {/* BOTTOM FOOTER */}
       <div className="h-8 border-t-4 border-tv-border bg-tv-bg-base flex items-center justify-between px-4 text-xs font-semibold text-tv-text-secondary select-none flex-shrink-0">
-        {/* Bottom Left: Ranges */}
-        <div className="flex items-center space-x-3">
-          {['1D', '5D', '1M', '3M', '6M', 'YTD', '1Y', '5Y', 'All'].map((range) => (
-            <span key={range} className="hover:text-blue-500 cursor-pointer transition-colors px-1">
-              {range}
+        {/* Bottom Left: Timeframe Intervals */}
+        <div className="flex items-center space-x-1">
+          {(['1min', '3min', '5min', '15min', '30min', '1hr'] as TimeframeId[]).map((tf) => (
+            <span
+              key={tf}
+              onClick={() => setActiveTimeframe(tf)}
+              className={`px-2 py-0.5 rounded cursor-pointer transition-all duration-200 font-semibold text-[11px] uppercase tracking-wider ${
+                activeTimeframe === tf
+                  ? 'bg-blue-500/20 text-blue-400 border border-blue-500/40 shadow-[0_0_8px_rgba(59,130,246,0.15)]'
+                  : 'hover:text-blue-400 hover:bg-white/5 text-tv-text-secondary'
+              }`}
+            >
+              {tf}
             </span>
           ))}
-          <CalendarRange size={14} className="cursor-pointer hover:text-tv-text-primary ml-2" />
         </div>
 
         {/* Bottom Right: Time Info */}
